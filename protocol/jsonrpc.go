@@ -75,7 +75,7 @@ func NewJSONRPCProtocol(t interfaces.Transport) *JSONRPCProtocol {
 }
 
 // TODO: should we return Response !?
-func (p *JSONRPCProtocol) SendRequest(endpoint string, r *interfaces.Request) (interfaces.ResponseReader, error) {
+func (p *JSONRPCProtocol) SendRequest(endpoint string, r *interfaces.Request) (interface{}, error) {
 	body := RequestBody{
 		Version: "2.0",
 		Method:  r.Method,
@@ -86,7 +86,24 @@ func (p *JSONRPCProtocol) SendRequest(endpoint string, r *interfaces.Request) (i
 	if err != nil {
 		return nil, err
 	}
-	return p.transport.Send(endpoint, b)
+	fmt.Printf("Sending %v -> %s\n", b, endpoint)
+	resp, err := p.transport.Send(endpoint, b)
+	if err != nil {
+		return nil, err
+	}
+	data, err := resp.Read()
+	fmt.Printf("Received %s\n", data)
+	if err != nil {
+		return nil, err
+	}
+	respBody := ResponseBody{}
+	err = p.serializer.Decode(data, &respBody)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: If body.Error return error
+	return respBody.Result, nil
+
 }
 
 func (p *JSONRPCProtocol) ReceiveRequest() (interfaces.ResponseWriter, *interfaces.Request) {

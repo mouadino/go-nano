@@ -1,4 +1,3 @@
-// FIXME: No Implementation yet!
 package main
 
 import (
@@ -8,26 +7,20 @@ import (
 	nano "github.com/mouadino/go-nano"
 )
 
-var echo = nano.Client("echo")
-
-type demoService struct {
-	Delay int
-}
-
-// TODO: Do I need to make it a service ?
-// TODO: How to start Main ?
-func (svc demoService) Main(s string) string {
-	c := time.Tick(svc.Delay * time.Second)
-	for i, _ := range c {
-		text := fmt.Sprintf("foo_%s", i)
-		result := echo.Echo(text)
-		fmt.Println("%v", result)
-	}
-}
+var echo = nano.Client("http://127.0.0.1:8080")
 
 func main() {
-	// TODO: Delay as config.
-	nano.Main(demoService{
-		Delay: 1,
-	})
+	c := time.Tick(1 * time.Second)
+	i := 0
+	for _ = range c {
+		fmt.Println("Calling ...")
+		text := fmt.Sprintf("foo_%d", i)
+		result, err := echo.Call("upper", map[string]interface{}{"text": text})
+		if err != nil {
+			fmt.Printf("Error: %s\n", err)
+		} else {
+			fmt.Printf("%s\n", result.(string))
+		}
+		i++
+	}
 }

@@ -17,7 +17,9 @@ type ResponsePromise struct {
 }
 
 func (r *ResponsePromise) Read() ([]byte, error) {
+	fmt.Println("Waiting for response ...")
 	<-r.ready
+	fmt.Println("Response is done")
 	if r.err != nil {
 		return []byte{}, r.err
 	}
@@ -31,6 +33,7 @@ func (r *ResponsePromise) setError(err error) {
 }
 
 func (r *ResponsePromise) set(resp http.Response) {
+	fmt.Printf("Setting received response: %s\n", r)
 	r.resp = resp
 	r.ready <- struct{}{}
 }
@@ -43,7 +46,7 @@ type ResponseWriter struct {
 func (w *ResponseWriter) Write(data interface{}) error {
 	_, err := w.resp.Write(data.([]byte))
 	if err != nil {
-		fmt.Printf("Error %s\n", err)
+		fmt.Printf("ResponseWriter Error %s\n", err)
 		return err
 	}
 	w.sent <- struct{}{}
@@ -55,19 +58,23 @@ func (w *ResponseWriter) Header() interfaces.Header {
 }
 
 type HTTPTransport struct {
+	mux  *http.ServeMux
 	reqs chan interfaces.Data
 }
 
 // TODO: Pipelining !?
-func NewHTTPTransport(address string) *HTTPTransport {
-	t := &HTTPTransport{
+func NewHTTPTransport() *HTTPTransport {
+	return &HTTPTransport{
+		mux: http.NewServeMux(),
 		// TODO: Buffered or unbuffered !?
 		reqs: make(chan interfaces.Data),
 	}
-	http.HandleFunc("/rpc/", t.handler)
-	// TODO: Start !?
-	go http.ListenAndServe(address, nil)
-	return t
+}
+
+func (t *HTTPTransport) Listen(address string) {
+	t.mux.HandleFunc("/rpc/", t.handler)
+	fmt.Printf("Listening on %s\n", address)
+	http.ListenAndServe(address, t.mux)
 }
 
 func (t *HTTPTransport) handler(w http.ResponseWriter, r *http.Request) {
@@ -88,18 +95,22 @@ func (t *HTTPTransport) handler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (t *HTTPTransport) Send(endpoint string, b []byte) (interfaces.ResponseReader, error) {
-	resp := ResponsePromise{}
+	resp := ResponsePromise{ready: make(chan struct{})}
 	go t.sendHTTP(endpoint, bytes.NewReader(b), &resp)
 	// TODO: How about errors !?
 	return &resp, nil
 }
 
 func (t *HTTPTransport) sendHTTP(endpoint string, body io.Reader, resp *ResponsePromise) {
+	endpoint = fmt.Sprintf("%s/rpc/", endpoint)
+	fmt.Printf("transport: sending to endpoint %s\n", body)
+	// TODO: content-type doesn't belong here.
 	r, err := http.Post(endpoint, "application/json-rpc", body)
 	if err != nil {
 		resp.setError(err)
 		return
 	}
+	// TODO: What should we when resp is not 200 !?
 	resp.set(*r)
 }
 

@@ -12,35 +12,67 @@ import (
 // TODO: Dependency Injection for transporter, serializer ...
 // TODO: Service interface.
 func Main(service interface{}) {
+	t := transport.NewHTTPTransport()
 	app := NewApplication(
 		service,
-		protocol.NewJSONRPCProtocol(transport.NewHTTPTransport("127.0.0.1:8080")),
+		t,
+		protocol.NewJSONRPCProtocol(t),
 	)
 	app.Serve()
 }
 
 type Application struct {
-	protocol interfaces.Protocol
-	handler  interfaces.Handler
-	svc      interface{}
+	transport interfaces.Transport
+	protocol  interfaces.Protocol
+	handler   interfaces.Handler
+	svc       interface{}
 }
 
-func NewApplication(svc interface{}, p interfaces.Protocol) *Application {
+func NewApplication(svc interface{}, t interfaces.Transport, p interfaces.Protocol) *Application {
 	return &Application{
-		svc:      svc,
-		protocol: p,
-		handler:  reflection.FromStruct(svc),
+		svc:       svc,
+		transport: t,
+		protocol:  p,
+		handler:   reflection.FromStruct(svc),
 	}
 }
 
 func (app *Application) Serve() {
 	// TODO: goroutine Pool.
+	go app.transport.Listen("127.0.0.1:8080")
 	for {
 		resp, req := app.protocol.ReceiveRequest()
 		fmt.Printf("%s -> %s\n", req, resp)
 		// TODO: In a go routine.
-		app.handler.Handle(resp, req)
+		go app.handler.Handle(resp, req)
 	}
+}
+
+type remoteClient struct {
+	endpoint string
+	protocol interfaces.Protocol
+}
+
+func Client(endpoint string) *remoteClient {
+	return &remoteClient{
+		endpoint: endpoint,
+		protocol: protocol.NewJSONRPCProtocol(transport.NewHTTPTransport()),
+	}
+}
+
+func (c *remoteClient) Call(method string, params map[string]interface{}) (interface{}, error) {
+	req := interfaces.Request{
+		Method: method,
+		Params: params,
+	}
+	resp, err := c.protocol.SendRequest(c.endpoint, &req)
+	if err != nil {
+		return nil, err
+	}
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
 }
 
 // TODO: Remove me !

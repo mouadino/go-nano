@@ -1,6 +1,7 @@
 package interfaces
 
 type Transport interface {
+	Listen(string)
 	Receive() <-chan Data
 	Send(endpoint string, data []byte) (ResponseReader, error)
 }
@@ -12,7 +13,7 @@ type Data struct {
 }
 
 type Protocol interface {
-	SendRequest(string, *Request) (ResponseReader, error)
+	SendRequest(string, *Request) (interface{}, error)
 	ReceiveRequest() (ResponseWriter, *Request)
 	// TODO: SendError !?
 }
