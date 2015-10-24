@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/mouadino/go-nano/serializer"
 	"github.com/mouadino/go-nano/transport"
@@ -53,7 +53,7 @@ func (w *JSONRPCResponseWriter) Write(data interface{}) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Write %s\n", b)
+	log.Printf("Write %s\n", b)
 	err = w.ResponseWriter.Write(b)
 	if err != nil {
 		return err
@@ -80,13 +80,13 @@ func (p *JSONRPCProtocol) SendRequest(endpoint string, r *Request) (interface{},
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("Sending %v -> %s\n", b, endpoint)
+	log.Printf("Sending %v -> %s\n", b, endpoint)
 	resp, err := p.transport.Send(endpoint, b)
 	if err != nil {
 		return nil, err
 	}
 	data, err := resp.Read()
-	fmt.Printf("Received %s\n", data)
+	log.Printf("Received %s\n", data)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +113,7 @@ func (p *JSONRPCProtocol) ReceiveRequest() (transport.ResponseWriter, *Request) 
 	b := <-p.transport.Receive()
 	body := RequestBody{}
 	err := p.serializer.Decode(b.Body, &body)
-	fmt.Printf("body %s %s\n", b.Body, body)
+	log.Printf("body %s %s\n", b.Body, body)
 	if err != nil {
 		return nil, nil
 	}

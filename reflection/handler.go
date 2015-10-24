@@ -2,6 +2,7 @@ package reflection
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"regexp"
 	"strings"
@@ -17,12 +18,16 @@ type StructHandler struct {
 	methods map[string]MethodHandler
 }
 
+func isRPCMethod(name string) bool {
+	return publicMethod.MatchString(name) && !strings.HasPrefix(name, "Nano")
+}
+
 func FromStruct(svc interface{}) *StructHandler {
 	methods := map[string]MethodHandler{}
 	svcType := reflect.TypeOf(svc)
 	for i := 0; i < svcType.NumMethod(); i++ {
 		method := svcType.Method(i)
-		if publicMethod.MatchString(method.Name) {
+		if isRPCMethod(method.Name) {
 			methods[strings.ToLower(method.Name)] = MethodHandler{svc, svcType.Method(i)}
 		}
 	}
@@ -37,7 +42,7 @@ func (h *StructHandler) Handle(resp transport.ResponseWriter, req *protocol.Requ
 	fh, ok := h.methods[name]
 	if !ok {
 		// TODO: resp.WriteError(...) !?
-		fmt.Printf("unknown method %s\n", name)
+		log.Printf("unknown method %s\n", name)
 		return fmt.Errorf("unknown method %s", name)
 	}
 	return fh.Handle(resp, req)
@@ -57,9 +62,9 @@ func (h *MethodHandler) Handle(resp transport.ResponseWriter, req *protocol.Requ
 		in[i] = reflect.ValueOf(v)
 		i++
 	}
-	fmt.Printf("calling %s with %s\n", h.method, in)
+	log.Printf("calling %s with %s\n", h.method, in)
 	ret := h.method.Func.Call(in)
-	fmt.Printf("returning %s\n", ret)
+	log.Printf("returning %s\n", ret)
 	data := make([]interface{}, len(ret))
 	for i, v := range ret {
 		data[i] = v.Interface()

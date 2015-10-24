@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/mouadino/go-nano/header"
@@ -17,9 +18,9 @@ type ResponsePromise struct {
 }
 
 func (r *ResponsePromise) Read() ([]byte, error) {
-	fmt.Println("Waiting for response ...")
+	log.Println("Waiting for response ...")
 	<-r.ready
-	fmt.Println("Response is done")
+	log.Println("Response is done")
 	if r.err != nil {
 		return []byte{}, r.err
 	}
@@ -33,7 +34,7 @@ func (r *ResponsePromise) setError(err error) {
 }
 
 func (r *ResponsePromise) set(resp http.Response) {
-	fmt.Printf("Setting received response: %s\n", r)
+	log.Printf("Setting received response: %s\n", r)
 	r.resp = resp
 	r.ready <- struct{}{}
 }
@@ -46,7 +47,7 @@ type HTTPResponseWriter struct {
 func (w *HTTPResponseWriter) Write(data interface{}) error {
 	_, err := w.resp.Write(data.([]byte))
 	if err != nil {
-		fmt.Printf("HTTPResponseWriter Error %s\n", err)
+		log.Printf("HTTPResponseWriter Error %s\n", err)
 		return err
 	}
 	w.sent <- struct{}{}
@@ -73,7 +74,7 @@ func NewHTTPTransport() *HTTPTransport {
 
 func (t *HTTPTransport) Listen(address string) {
 	t.mux.HandleFunc("/rpc/", t.handler)
-	fmt.Printf("Listening on %s\n", address)
+	log.Printf("Listening on %s\n", address)
 	http.ListenAndServe(address, t.mux)
 }
 
@@ -103,7 +104,7 @@ func (t *HTTPTransport) Send(endpoint string, b []byte) (ResponseReader, error) 
 
 func (t *HTTPTransport) sendHTTP(endpoint string, body io.Reader, resp *ResponsePromise) {
 	endpoint = fmt.Sprintf("%s/rpc/", endpoint)
-	fmt.Printf("transport: sending to endpoint %s\n", body)
+	log.Printf("transport: sending to endpoint %s\n", body)
 	// TODO: content-type doesn't belong here.
 	r, err := http.Post(endpoint, "application/json-rpc", body)
 	if err != nil {
