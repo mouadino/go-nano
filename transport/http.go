@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/mouadino/go-nano/header"
@@ -74,8 +75,12 @@ func NewHTTPTransport() *HTTPTransport {
 
 func (t *HTTPTransport) Listen(address string) {
 	t.mux.HandleFunc("/rpc/", t.handler)
-	log.Printf("Listening on %s\n", address)
-	http.ListenAndServe(address, t.mux)
+	listner, err := net.Listen("tcp", address)
+	if err != nil {
+		log.Fatalf("Listening failed: %s", err)
+	}
+	log.Printf("Listening on %s\n", listner.Addr())
+	http.Serve(listner, t.mux)
 }
 
 func (t *HTTPTransport) handler(w http.ResponseWriter, r *http.Request) {

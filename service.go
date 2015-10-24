@@ -30,8 +30,7 @@ func (s *Service) ListenAndServe() {
 		defer s.NanoStop()
 	}
 	// TODO: goroutine Pool.
-	// FIXME: Harcoded listen.
-	go s.transport.Listen("127.0.0.1:8080")
+	go s.transport.Listen(":0")
 	go s.loop()
 	s.waitForTermination()
 }
