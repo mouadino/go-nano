@@ -2,6 +2,9 @@ package nano
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/mouadino/go-nano/handler"
 	"github.com/mouadino/go-nano/protocol"
@@ -26,14 +29,27 @@ func (s *Service) ListenAndServe() {
 		}
 		defer s.NanoStop()
 	}
-	// TODO: CTRL-C Catch.
 	// TODO: goroutine Pool.
 	// FIXME: Harcoded listen.
 	go s.transport.Listen("127.0.0.1:8080")
+	go s.loop()
+	s.waitForTermination()
+}
+
+func (s *Service) loop() {
 	for {
 		resp, req := s.protocol.ReceiveRequest()
 		log.Printf("%s -> %s\n", req, resp)
 		go s.handler.Handle(resp, req)
+	}
+}
+
+func (s *Service) waitForTermination() {
+	term := make(chan os.Signal)
+	signal.Notify(term, os.Interrupt, syscall.SIGTERM)
+	select {
+	case <-term:
+		log.Print("Received SIGTERM, exiting ...")
 	}
 }
 
