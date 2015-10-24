@@ -7,7 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/mouadino/go-nano/interfaces"
+	"github.com/mouadino/go-nano/header"
 )
 
 type ResponsePromise struct {
@@ -38,28 +38,28 @@ func (r *ResponsePromise) set(resp http.Response) {
 	r.ready <- struct{}{}
 }
 
-type ResponseWriter struct {
+type HTTPResponseWriter struct {
 	sent chan struct{}
 	resp http.ResponseWriter
 }
 
-func (w *ResponseWriter) Write(data interface{}) error {
+func (w *HTTPResponseWriter) Write(data interface{}) error {
 	_, err := w.resp.Write(data.([]byte))
 	if err != nil {
-		fmt.Printf("ResponseWriter Error %s\n", err)
+		fmt.Printf("HTTPResponseWriter Error %s\n", err)
 		return err
 	}
 	w.sent <- struct{}{}
 	return nil
 }
 
-func (w *ResponseWriter) Header() interfaces.Header {
+func (w *HTTPResponseWriter) Header() header.Header {
 	return map[string][]string{} // FIXME: w.resp.Header()
 }
 
 type HTTPTransport struct {
 	mux  *http.ServeMux
-	reqs chan interfaces.Data
+	reqs chan Data
 }
 
 // TODO: Pipelining !?
@@ -67,7 +67,7 @@ func NewHTTPTransport() *HTTPTransport {
 	return &HTTPTransport{
 		mux: http.NewServeMux(),
 		// TODO: Buffered or unbuffered !?
-		reqs: make(chan interfaces.Data),
+		reqs: make(chan Data),
 	}
 }
 
@@ -81,20 +81,20 @@ func (t *HTTPTransport) handler(w http.ResponseWriter, r *http.Request) {
 	body, _ := ioutil.ReadAll(r.Body)
 	defer r.Body.Close()
 	// TODO: Handle errors.
-	resp := ResponseWriter{
+	resp := HTTPResponseWriter{
 		make(chan struct{}),
 		w,
 	}
-	t.reqs <- interfaces.Data{
+	t.reqs <- Data{
 		Body: body,
 		Resp: &resp,
 	}
-	// Wait here else ResponseWriter became invalid.
+	// Wait here else http.ResponseWriter became invalid.
 	// TODO: Timeout !?
 	<-resp.sent
 }
 
-func (t *HTTPTransport) Send(endpoint string, b []byte) (interfaces.ResponseReader, error) {
+func (t *HTTPTransport) Send(endpoint string, b []byte) (ResponseReader, error) {
 	resp := ResponsePromise{ready: make(chan struct{})}
 	go t.sendHTTP(endpoint, bytes.NewReader(b), &resp)
 	// TODO: How about errors !?
@@ -114,6 +114,6 @@ func (t *HTTPTransport) sendHTTP(endpoint string, body io.Reader, resp *Response
 	resp.set(*r)
 }
 
-func (t *HTTPTransport) Receive() <-chan interfaces.Data {
+func (t *HTTPTransport) Receive() <-chan Data {
 	return t.reqs
 }

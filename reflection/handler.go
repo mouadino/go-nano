@@ -6,7 +6,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/mouadino/go-nano/interfaces"
+	"github.com/mouadino/go-nano/protocol"
+	"github.com/mouadino/go-nano/transport"
 )
 
 var publicMethod = regexp.MustCompile("^[A-Z]")
@@ -31,7 +32,7 @@ func FromStruct(svc interface{}) *StructHandler {
 	}
 }
 
-func (h *StructHandler) Handle(resp interfaces.ResponseWriter, req *interfaces.Request) error {
+func (h *StructHandler) Handle(resp transport.ResponseWriter, req *protocol.Request) error {
 	name := req.Method
 	fh, ok := h.methods[name]
 	if !ok {
@@ -47,7 +48,7 @@ type MethodHandler struct {
 	method reflect.Method
 }
 
-func (h *MethodHandler) Handle(resp interfaces.ResponseWriter, req *interfaces.Request) error {
+func (h *MethodHandler) Handle(resp transport.ResponseWriter, req *protocol.Request) error {
 	in := make([]reflect.Value, len(req.Params)+1)
 	in[0] = reflect.ValueOf(h.svc)
 	i := 1

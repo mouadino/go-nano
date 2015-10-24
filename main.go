@@ -1,9 +1,9 @@
-package main
+package nano
 
 import (
 	"fmt"
 
-	"github.com/mouadino/go-nano/interfaces"
+	"github.com/mouadino/go-nano/handler"
 	"github.com/mouadino/go-nano/protocol"
 	"github.com/mouadino/go-nano/reflection"
 	"github.com/mouadino/go-nano/transport"
@@ -22,13 +22,13 @@ func Main(service interface{}) {
 }
 
 type Application struct {
-	transport interfaces.Transport
-	protocol  interfaces.Protocol
-	handler   interfaces.Handler
+	transport transport.Transport
+	protocol  protocol.Protocol
+	handler   handler.Handler
 	svc       interface{}
 }
 
-func NewApplication(svc interface{}, t interfaces.Transport, p interfaces.Protocol) *Application {
+func NewApplication(svc interface{}, t transport.Transport, p protocol.Protocol) *Application {
 	return &Application{
 		svc:       svc,
 		transport: t,
@@ -43,37 +43,6 @@ func (app *Application) Serve() {
 	for {
 		resp, req := app.protocol.ReceiveRequest()
 		fmt.Printf("%s -> %s\n", req, resp)
-		// TODO: In a go routine.
 		go app.handler.Handle(resp, req)
 	}
 }
-
-type remoteClient struct {
-	endpoint string
-	protocol interfaces.Protocol
-}
-
-func Client(endpoint string) *remoteClient {
-	return &remoteClient{
-		endpoint: endpoint,
-		protocol: protocol.NewJSONRPCProtocol(transport.NewHTTPTransport()),
-	}
-}
-
-func (c *remoteClient) Call(method string, params map[string]interface{}) (interface{}, error) {
-	req := interfaces.Request{
-		Method: method,
-		Params: params,
-	}
-	resp, err := c.protocol.SendRequest(c.endpoint, &req)
-	if err != nil {
-		return nil, err
-	}
-	if err != nil {
-		return nil, err
-	}
-	return resp, nil
-}
-
-// TODO: Remove me !
-func main() {}

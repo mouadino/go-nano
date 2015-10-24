@@ -3,8 +3,8 @@ package protocol
 import (
 	"fmt"
 
-	"github.com/mouadino/go-nano/interfaces"
 	"github.com/mouadino/go-nano/serializer"
+	"github.com/mouadino/go-nano/transport"
 )
 
 type RequestBody struct {
@@ -14,8 +14,8 @@ type RequestBody struct {
 	Id      string                 `json:"id"`
 }
 
-func (b *RequestBody) ToRequest() *interfaces.Request {
-	return &interfaces.Request{
+func (b *RequestBody) ToRequest() *Request {
+	return &Request{
 		Method: b.Method,
 		Params: b.Params,
 	}
@@ -39,7 +39,7 @@ func (b *ResponseBody) ToRespone() {
 }
 
 type JSONRPCResponseWriter struct {
-	interfaces.ResponseWriter
+	transport.ResponseWriter
 	p *JSONRPCProtocol
 }
 
@@ -62,12 +62,12 @@ func (w *JSONRPCResponseWriter) Write(data interface{}) error {
 }
 
 type JSONRPCProtocol struct {
-	transport  interfaces.Transport
-	serializer interfaces.Serializer
+	transport  transport.Transport
+	serializer serializer.Serializer
 }
 
 // TODO: DI for serializer !
-func NewJSONRPCProtocol(t interfaces.Transport) *JSONRPCProtocol {
+func NewJSONRPCProtocol(t transport.Transport) *JSONRPCProtocol {
 	return &JSONRPCProtocol{
 		transport:  t,
 		serializer: serializer.JSONSerializer{},
@@ -75,14 +75,8 @@ func NewJSONRPCProtocol(t interfaces.Transport) *JSONRPCProtocol {
 }
 
 // TODO: should we return Response !?
-func (p *JSONRPCProtocol) SendRequest(endpoint string, r *interfaces.Request) (interface{}, error) {
-	body := RequestBody{
-		Version: "2.0",
-		Method:  r.Method,
-		Params:  r.Params,
-		Id:      "0", // TODO: gouuid !?
-	}
-	b, err := p.serializer.Encode(body)
+func (p *JSONRPCProtocol) SendRequest(endpoint string, r *Request) (interface{}, error) {
+	b, err := p.getBody(r)
 	if err != nil {
 		return nil, err
 	}
@@ -103,10 +97,19 @@ func (p *JSONRPCProtocol) SendRequest(endpoint string, r *interfaces.Request) (i
 	}
 	// TODO: If body.Error return error
 	return respBody.Result, nil
-
 }
 
-func (p *JSONRPCProtocol) ReceiveRequest() (interfaces.ResponseWriter, *interfaces.Request) {
+func (p *JSONRPCProtocol) getBody(r *Request) ([]byte, error) {
+	body := RequestBody{
+		Version: "2.0",
+		Method:  r.Method,
+		Params:  r.Params,
+		Id:      "0", // TODO: gouuid !?
+	}
+	return p.serializer.Encode(body)
+}
+
+func (p *JSONRPCProtocol) ReceiveRequest() (transport.ResponseWriter, *Request) {
 	b := <-p.transport.Receive()
 	body := RequestBody{}
 	err := p.serializer.Decode(b.Body, &body)

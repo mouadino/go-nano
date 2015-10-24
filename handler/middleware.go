@@ -4,7 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/mouadino/go-nano/interfaces"
+	"github.com/mouadino/go-nano/protocol"
+	"github.com/mouadino/go-nano/transport"
 )
 
 // TODO: Trace-id Middleware.
@@ -16,14 +17,14 @@ var (
 )
 
 type TimeoutMiddleware struct {
-	interfaces.Handler
+	Handler
 	timeout time.Duration
 	fail    chan struct{}
 	finish  chan error
 }
 
-func WithTimeout(timeout time.Duration) interfaces.Middleware {
-	return func(h interfaces.Handler) interfaces.Handler {
+func WithTimeout(timeout time.Duration) Middleware {
+	return func(h Handler) Handler {
 		return &TimeoutMiddleware{
 			Handler: h,
 			timeout: timeout,
@@ -33,7 +34,7 @@ func WithTimeout(timeout time.Duration) interfaces.Middleware {
 	}
 }
 
-func (h *TimeoutMiddleware) Handle(w interfaces.ResponseWriter, r *interfaces.Request) error {
+func (h *TimeoutMiddleware) Handle(w transport.ResponseWriter, r *protocol.Request) error {
 	defer close(h.finish)
 	defer close(h.fail)
 	go func() {
