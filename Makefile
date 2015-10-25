@@ -6,11 +6,14 @@
 GOPATH := ${PWD}/_vendor:${GOPATH}
 export GOPATH
 
-default: test
+default: build
+
+build:
+		go build -v -o nano-client ./cli/nano-client
 
 examples:
-		go build -v -o upper ./examples/upper/main.go
-		go build -v -o demo ./examples/demo/main.go
+		go build -v -o upper ./examples/upper
+		go build -v -o demo ./examples/demo
 
 doc:
 		godoc -http=:6060 -index

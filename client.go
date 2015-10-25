@@ -7,22 +7,22 @@ import (
 
 type remoteClient struct {
 	endpoint string
-	protocol protocol.Protocol
+	proto    protocol.Protocol
 }
 
 func Client(endpoint string) *remoteClient {
 	return &remoteClient{
 		endpoint: endpoint,
-		protocol: protocol.NewJSONRPCProtocol(transport.NewHTTPTransport()),
+		proto:    protocol.NewJSONRPCProtocol(transport.NewHTTPTransport()),
 	}
 }
 
-func (c *remoteClient) Call(method string, params map[string]interface{}) (interface{}, error) {
+func (client *remoteClient) Call(method string, params map[string]interface{}) (interface{}, error) {
 	req := protocol.Request{
 		Method: method,
 		Params: params,
 	}
-	resp, err := c.protocol.SendRequest(c.endpoint, &req)
+	resp, err := client.proto.SendRequest(client.endpoint, &req)
 	if err != nil {
 		return nil, err
 	}

@@ -35,7 +35,7 @@ Transports:
 
 - [ ] AMPQ Transport
 - [ ] ZeroMQ Transport
-- [ ] HTTP Transport
+- [X] HTTP Transport
 
 Protocols:
 
@@ -45,7 +45,7 @@ Protocols:
 
 Client
 
-- [ ] Client
+- [X] Client
 - [ ] Command line
 - [ ] Circuit Breaker
 
