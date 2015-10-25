@@ -15,7 +15,7 @@ func main() {
 	i := 0
 	for _ = range c {
 		text := fmt.Sprintf("foo_%d", i)
-		result, err := echo.Call("upper", map[string]interface{}{"text": text})
+		result, err := echo.Call("upper", text)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
 		} else {

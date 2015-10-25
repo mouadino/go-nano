@@ -12,6 +12,24 @@ import (
 	"github.com/mouadino/go-nano/transport"
 )
 
+func Default(service interface{}) *Service {
+	trans := transport.NewHTTPTransport()
+	return Custom(
+		service,
+		trans,
+		protocol.NewJSONRPCProtocol(trans),
+	)
+}
+
+func Custom(svc interface{}, trans transport.Transport, proto protocol.Protocol) *Service {
+	return &Service{
+		svc:     svc,
+		trans:   trans,
+		proto:   proto,
+		handler: reflection.FromStruct(svc),
+	}
+}
+
 type Service struct {
 	trans   transport.Transport
 	proto   protocol.Protocol
@@ -47,23 +65,5 @@ func (s *Service) waitForTermination() {
 	select {
 	case <-term:
 		log.Print("Received SIGTERM, exiting ...")
-	}
-}
-
-func Default(service interface{}) *Service {
-	trans := transport.NewHTTPTransport()
-	return Custom(
-		service,
-		trans,
-		protocol.NewJSONRPCProtocol(trans),
-	)
-}
-
-func Custom(svc interface{}, trans transport.Transport, proto protocol.Protocol) *Service {
-	return &Service{
-		svc:     svc,
-		trans:   trans,
-		proto:   proto,
-		handler: reflection.FromStruct(svc),
 	}
 }

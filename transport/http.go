@@ -55,6 +55,12 @@ func (w *HTTPResponseWriter) Write(data interface{}) error {
 	return nil
 }
 
+// FIXME: We should not have to define this here !
+// TODO: Split transport.ResponseWriter vs protocol.ResponseWriter
+func (w *HTTPResponseWriter) WriteError(err error) error {
+	return nil
+}
+
 func (w *HTTPResponseWriter) Header() header.Header {
 	return map[string][]string{} // FIXME: w.resp.Header()
 }

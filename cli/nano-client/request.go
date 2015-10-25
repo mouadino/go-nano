@@ -17,14 +17,15 @@ func SendRequest(c *cli.Context) {
 
 	client := nano.Client(c.String("service"))
 
-	var params map[string]interface{}
+	var params []interface{}
 	err := json.Unmarshal([]byte(c.String("params")), &params)
 	if err != nil {
 		fmt.Printf("error: %s\n", err)
 		os.Exit(1)
 	}
 
-	ret, err := client.Call(c.String("method"), params)
+	method := c.String("method")
+	ret, err := client.Call(method, params...)
 	if err != nil {
 		fmt.Printf("error: %s\n", err)
 		os.Exit(1)

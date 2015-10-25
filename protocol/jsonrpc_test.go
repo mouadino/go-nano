@@ -70,3 +70,5 @@ func TestReceiveRequest(t *testing.T) {
 		t.Errorf("Expected params %s, got %s", params, req.Params)
 	}
 }
+
+// TODO: Test for JSONRPCResponseWriter

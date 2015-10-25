@@ -3,6 +3,7 @@ package nano
 import (
 	"github.com/mouadino/go-nano/protocol"
 	"github.com/mouadino/go-nano/transport"
+	"github.com/mouadino/go-nano/utils"
 )
 
 type remoteClient struct {
@@ -17,15 +18,12 @@ func Client(endpoint string) *remoteClient {
 	}
 }
 
-func (client *remoteClient) Call(method string, params map[string]interface{}) (interface{}, error) {
+func (client *remoteClient) Call(method string, params ...interface{}) (interface{}, error) {
 	req := protocol.Request{
 		Method: method,
-		Params: params,
+		Params: utils.ParamsFormat(params...),
 	}
 	resp, err := client.proto.SendRequest(client.endpoint, &req)
-	if err != nil {
-		return nil, err
-	}
 	if err != nil {
 		return nil, err
 	}

@@ -30,12 +30,22 @@ func (t *DummyResponseReader) Read() ([]byte, error) {
 	return []byte{}, nil
 }
 
-type DummyResponseWriter struct{}
+type DummyResponseWriter struct {
+	Data       interface{}
+	HeaderData header.Header
+	Error      error
+}
 
 func (w *DummyResponseWriter) Write(data interface{}) error {
+	w.Data = data
+	return nil
+}
+
+func (w *DummyResponseWriter) WriteError(err error) error {
+	w.Error = err
 	return nil
 }
 
 func (w *DummyResponseWriter) Header() header.Header {
-	return map[string][]string{} // FIXME: w.resp.Header()
+	return w.HeaderData // FIXME: w.resp.Header()
 }

@@ -6,7 +6,7 @@ import (
 )
 
 type Handler interface {
-	Handle(transport.ResponseWriter, *protocol.Request) error
+	Handle(transport.ResponseWriter, *protocol.Request)
 }
 
 type Middleware func(Handler) Handler

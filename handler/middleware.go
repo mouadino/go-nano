@@ -20,7 +20,7 @@ type TimeoutMiddleware struct {
 	Handler
 	timeout time.Duration
 	fail    chan struct{}
-	finish  chan error
+	finish  chan struct{}
 }
 
 func WithTimeout(timeout time.Duration) Middleware {
@@ -29,17 +29,18 @@ func WithTimeout(timeout time.Duration) Middleware {
 			Handler: h,
 			timeout: timeout,
 			fail:    make(chan struct{}, 1),
-			finish:  make(chan error, 1),
+			finish:  make(chan struct{}, 1),
 		}
 	}
 }
 
-func (h *TimeoutMiddleware) Handle(w transport.ResponseWriter, r *protocol.Request) error {
+func (h *TimeoutMiddleware) Handle(w transport.ResponseWriter, r *protocol.Request) {
 	defer close(h.finish)
 	defer close(h.fail)
 	go func() {
 		// TODO: Context and cancellation.
-		h.finish <- h.Handler.Handle(w, r)
+		h.Handler.Handle(w, r)
+		h.finish <- struct{}{}
 	}()
 	go func() {
 		time.Sleep(h.timeout * time.Second)
@@ -48,8 +49,8 @@ func (h *TimeoutMiddleware) Handle(w transport.ResponseWriter, r *protocol.Reque
 
 	select {
 	case <-h.fail:
-		return TimeOutError
-	case err := <-h.finish:
-		return err
+		return // FIXME: TimeOutError
+	case <-h.finish:
+		return
 	}
 }

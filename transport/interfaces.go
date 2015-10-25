@@ -12,6 +12,7 @@ type ResponseWriter interface {
 	Header() header.Header
 
 	Write(interface{}) error
+	WriteError(err error) error
 }
 
 // TODO: Rename me

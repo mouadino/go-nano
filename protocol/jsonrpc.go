@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/mouadino/go-nano/serializer"
@@ -27,10 +28,46 @@ type ErrorBody struct {
 	Data    string `json:"data"`
 }
 
+func (b *ErrorBody) Error() error {
+	// TODO: This should be the reverse of FromNanoError.
+	return fmt.Errorf("%s: %s", b.Code, b.Message)
+}
+
+func FromNanoError(err error) *ErrorBody {
+	// TODO: Set http status,
+	// TODO: Set Data.
+	switch {
+	case err == UnknownMethod:
+		return &ErrorBody{
+			Code:    "-32601",
+			Message: err.Error(),
+			Data:    "",
+		}
+	case err == ParamsError:
+		return &ErrorBody{
+			Code:    "-32602",
+			Message: err.Error(),
+			Data:    "",
+		}
+	case err == InternalError:
+		return &ErrorBody{
+			Code:    "-32603",
+			Message: err.Error(),
+			Data:    "",
+		}
+	default:
+		return &ErrorBody{
+			Code:    "-32000",
+			Message: "Server error",
+			Data:    err.Error(),
+		}
+	}
+}
+
 type ResponseBody struct {
 	Version string      `json:"jsonrpc"`
 	Result  interface{} `json:"result"`
-	Error   ErrorBody   `json:"error"`
+	Error   *ErrorBody  `json:"error"`
 	Id      string      `json:"id"`
 }
 
@@ -49,6 +86,20 @@ func (w *JSONRPCResponseWriter) Write(data interface{}) error {
 		Result:  data,
 		Id:      "0",
 	}
+	return w.writeToTransport(&body)
+}
+
+func (w *JSONRPCResponseWriter) WriteError(err error) error {
+	body := ResponseBody{
+		Version: "2.0",
+		Result:  nil,
+		Error:   FromNanoError(err),
+		Id:      "0",
+	}
+	return w.writeToTransport(&body)
+}
+
+func (w *JSONRPCResponseWriter) writeToTransport(body *ResponseBody) error {
 	b, err := w.p.serializer.Encode(body)
 	if err != nil {
 		return err
@@ -95,7 +146,9 @@ func (p *JSONRPCProtocol) SendRequest(endpoint string, r *Request) (interface{},
 	if err != nil {
 		return nil, err
 	}
-	// TODO: If body.Error return error
+	if respBody.Error != nil {
+		return nil, respBody.Error.Error()
+	}
 	return respBody.Result, nil
 }
 

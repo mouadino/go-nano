@@ -18,13 +18,10 @@ type StructHandler struct {
 	methods map[string]MethodHandler
 }
 
-func isRPCMethod(name string) bool {
-	return publicMethod.MatchString(name) && !strings.HasPrefix(name, "Nano")
-}
-
 func FromStruct(svc interface{}) *StructHandler {
 	methods := map[string]MethodHandler{}
 	svcType := reflect.TypeOf(svc)
+	log.Printf("%s %s", svc, svcType.NumMethod())
 	for i := 0; i < svcType.NumMethod(); i++ {
 		method := svcType.Method(i)
 		if isRPCMethod(method.Name) {
@@ -37,15 +34,19 @@ func FromStruct(svc interface{}) *StructHandler {
 	}
 }
 
-func (h *StructHandler) Handle(resp transport.ResponseWriter, req *protocol.Request) error {
+func isRPCMethod(name string) bool {
+	return publicMethod.MatchString(name) && !strings.HasPrefix(name, "Nano")
+}
+
+func (h *StructHandler) Handle(resp transport.ResponseWriter, req *protocol.Request) {
 	name := req.Method
 	fh, ok := h.methods[name]
 	if !ok {
-		// TODO: resp.WriteError(...) !?
 		log.Printf("unknown method %s\n", name)
-		return fmt.Errorf("unknown method %s", name)
+		resp.WriteError(protocol.UnknownMethod)
+		return
 	}
-	return fh.Handle(resp, req)
+	fh.Handle(resp, req)
 }
 
 type MethodHandler struct {
@@ -53,16 +54,25 @@ type MethodHandler struct {
 	method reflect.Method
 }
 
-func (h *MethodHandler) Handle(resp transport.ResponseWriter, req *protocol.Request) error {
+func (h *MethodHandler) Handle(resp transport.ResponseWriter, req *protocol.Request) {
+	defer h.recoverFromError(resp)
 	in := make([]reflect.Value, len(req.Params)+1)
+	log.Printf("Parameters %s", req.Params)
 	in[0] = reflect.ValueOf(h.svc)
-	i := 1
-	// TODO: Order parameters.
-	for _, v := range req.Params {
-		in[i] = reflect.ValueOf(v)
-		i++
+	for i := 0; ; i++ {
+		v, ok := req.Params[fmt.Sprintf("_%d", i)]
+		log.Printf("Get parameter %s: %s", fmt.Sprintf("_%d", i), v)
+		if !ok {
+			break
+		}
+		in[i+1] = reflect.ValueOf(v)
+	}
+	if h.method.Type.NumIn() != len(in) {
+		resp.WriteError(protocol.ParamsError)
+		return
 	}
 	log.Printf("calling %s with %s\n", h.method, in)
+	// TODO: Returning error !? .NumOut() ... ?
 	ret := h.method.Func.Call(in)
 	log.Printf("returning %s\n", ret)
 	data := make([]interface{}, len(ret))
@@ -74,5 +84,11 @@ func (h *MethodHandler) Handle(resp transport.ResponseWriter, req *protocol.Requ
 	} else {
 		resp.Write(data)
 	}
-	return nil
+}
+
+func (h *MethodHandler) recoverFromError(resp transport.ResponseWriter) {
+	if err := recover(); err != nil {
+		log.Println("Recovered from handler error", err)
+		resp.WriteError(protocol.InternalError)
+	}
 }
