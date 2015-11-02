@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"strings"
+	"time"
 
 	nano "github.com/mouadino/go-nano"
 )
@@ -19,6 +20,7 @@ func (echoService) NanoStop() {
 }
 
 func (echoService) Upper(s string) string {
+	time.Sleep(5 * time.Second)
 	return strings.ToUpper(s)
 }
 
