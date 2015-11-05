@@ -19,9 +19,7 @@ type ResponsePromise struct {
 }
 
 func (r *ResponsePromise) Read() ([]byte, error) {
-	log.Println("Waiting for response ...")
 	<-r.ready
-	log.Println("Response is done")
 	if r.err != nil {
 		return []byte{}, r.err
 	}
@@ -35,7 +33,6 @@ func (r *ResponsePromise) setError(err error) {
 }
 
 func (r *ResponsePromise) set(resp http.Response) {
-	log.Printf("Setting received response: %s\n", r)
 	r.resp = resp
 	r.ready <- struct{}{}
 }
@@ -48,7 +45,6 @@ type HTTPResponseWriter struct {
 func (w *HTTPResponseWriter) Write(data interface{}) error {
 	_, err := w.resp.Write(data.([]byte))
 	if err != nil {
-		log.Printf("HTTPResponseWriter Error %s\n", err)
 		return err
 	}
 	w.sent <- struct{}{}
@@ -115,7 +111,6 @@ func (t *HTTPTransport) Send(endpoint string, b []byte) (ResponseReader, error) 
 
 func (t *HTTPTransport) sendHTTP(endpoint string, body io.Reader, resp *ResponsePromise) {
 	endpoint = fmt.Sprintf("%s/rpc/", endpoint)
-	log.Printf("transport: sending to endpoint %s\n", body)
 	// TODO: content-type doesn't belong here.
 	r, err := http.Post(endpoint, "application/json-rpc", body)
 	if err != nil {
