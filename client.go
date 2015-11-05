@@ -8,15 +8,18 @@ import (
 	"github.com/mouadino/go-nano/transport"
 )
 
-func Client(endpoint string) *client.Client {
-	c := CustomClient(endpoint, protocol.NewJSONRPCProtocol(transport.NewHTTPTransport()))
-	c.With(client.NewTimeoutFilter(3 * time.Second))
-	return c
+func DefaultClient(endpoint string) client.Client {
+	return CustomClient(
+		endpoint,
+		protocol.NewJSONRPCProtocol(transport.NewHTTPTransport()),
+		client.NewTimeoutExt(3*time.Second),
+	)
 }
 
-func CustomClient(endpoint string, proto protocol.Protocol) *client.Client {
-	return &client.Client{
+func CustomClient(endpoint string, proto protocol.Protocol, exts ...client.ClientExtension) client.Client {
+	c := &client.DefaultClient{
 		Endpoint: endpoint,
 		Proto:    proto,
 	}
+	return client.Decorate(c, exts...)
 }

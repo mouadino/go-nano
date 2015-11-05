@@ -9,7 +9,8 @@ import (
 )
 
 // FIXME: Using dynamic port now.
-var echo = nano.Client(fmt.Sprintf("http://127.0.0.1:%s", os.Getenv("PORT")))
+var address = fmt.Sprintf("http://127.0.0.1:%s", os.Getenv("PORT"))
+var echo = nano.DefaultClient(address)
 
 func main() {
 	c := time.Tick(1 * time.Second)

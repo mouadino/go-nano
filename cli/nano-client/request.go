@@ -15,7 +15,7 @@ func SendRequest(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	client := nano.Client(c.String("service"))
+	client := nano.DefaultClient(c.String("service"))
 
 	var params []interface{}
 	err := json.Unmarshal([]byte(c.String("params")), &params)

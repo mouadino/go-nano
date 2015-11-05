@@ -1,9 +1,7 @@
 package client
 
-import "github.com/mouadino/go-nano/protocol"
-
-type IClient interface {
-	SendRequest(string, *protocol.Request) (interface{}, error)
+type Client interface {
+	Call(string, ...interface{}) (interface{}, error)
 }
 
-type Filter func(IClient) IClient
+type ClientExtension func(Client) Client
