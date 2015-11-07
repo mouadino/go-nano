@@ -40,11 +40,9 @@ func (trans *HTTPTransport) Listen(address string) {
 	trans.mux.HandleFunc("/rpc/", trans.handler)
 	listner, err := net.Listen("tcp", address)
 	if err != nil {
-		log.Fatal("Listening failed: %s", err)
+		log.Fatal("Listening failed: ", err)
 	}
-	log.WithFields(log.Fields{
-		"address": listner.Addr(),
-	}).Info("Listening")
+	log.Info("Listening on ", listner.Addr())
 	http.Serve(listner, trans.mux)
 }
 

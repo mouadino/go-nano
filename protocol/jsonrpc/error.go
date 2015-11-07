@@ -1,10 +1,6 @@
 package jsonrpc
 
-import (
-	"fmt"
-
-	"github.com/mouadino/go-nano/protocol"
-)
+import "github.com/mouadino/go-nano/protocol"
 
 type ErrorBody struct {
 	Code    string `json:"code"`
@@ -13,10 +9,22 @@ type ErrorBody struct {
 }
 
 func (b *ErrorBody) Error() error {
-	return fmt.Errorf("jsonrpc error <%s> %s", b.Code, b.Message)
+	switch b.Code {
+	case "-32601":
+		return protocol.UnknownMethod
+	case "-32602":
+		return protocol.ParamsError
+	case "-32603":
+		return protocol.InternalError
+	default:
+		return protocol.ServerError
+	}
 }
 
 func FromNanoError(err error) *ErrorBody {
+	if err == nil {
+		return nil
+	}
 	// TODO: Set http status,
 	switch {
 	case err == protocol.UnknownMethod:
