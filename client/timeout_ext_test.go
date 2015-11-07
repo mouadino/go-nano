@@ -10,14 +10,15 @@ type DummyClient struct {
 }
 
 func (c *DummyClient) Call(m string, p ...interface{}) (interface{}, error) {
-	time.Sleep(c.interval)
+	// Simulate a real RPC.
+	time.Sleep(10 * time.Millisecond)
 	return nil, nil
 }
 
 func TestTimeoutTrigger(t *testing.T) {
 	c := Decorate(
-		&DummyClient{2 * time.Second},
-		NewTimeoutExt(1*time.Second),
+		&DummyClient{},
+		NewTimeoutExt(5*time.Millisecond),
 	)
 
 	_, err := c.Call("foobar")
@@ -29,8 +30,8 @@ func TestTimeoutTrigger(t *testing.T) {
 
 func TestNoTimeout(t *testing.T) {
 	c := Decorate(
-		&DummyClient{1 * time.Second},
-		NewTimeoutExt(5*time.Second),
+		&DummyClient{},
+		NewTimeoutExt(1*time.Second),
 	)
 
 	_, err := c.Call("foobar")

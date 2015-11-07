@@ -37,7 +37,7 @@ func (e *TimeoutExt) Call(method string, params ...interface{}) (interface{}, er
 	}()
 
 	select {
-	case <-time.After(e.timeout * time.Second):
+	case <-time.After(e.timeout):
 		return nil, TimeOutError
 	case res := <-e.reply:
 		return res.data, res.err
