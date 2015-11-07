@@ -1,8 +1,9 @@
 package main
 
 import (
-	"log"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
 
 	nano "github.com/mouadino/go-nano"
 )
@@ -10,12 +11,12 @@ import (
 type echoService struct{}
 
 func (echoService) NanoStart() error {
-	log.Println("Starting ...")
+	log.Debug("Starting ...")
 	return nil
 }
 
 func (echoService) NanoStop() {
-	log.Println("Stopping ...")
+	log.Debug("Stopping ...")
 }
 
 func (echoService) Upper(s string) string {

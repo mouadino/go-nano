@@ -2,11 +2,12 @@ package reflection
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"regexp"
 	"runtime/debug"
 	"strings"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/mouadino/go-nano/protocol"
 	"github.com/mouadino/go-nano/transport"
@@ -24,7 +25,6 @@ type StructHandler struct {
 func FromStruct(svc interface{}) *StructHandler {
 	methods := map[string]MethodHandler{}
 	svcType := reflect.TypeOf(svc)
-	log.Printf("%s %s", svc, svcType.NumMethod())
 	for i := 0; i < svcType.NumMethod(); i++ {
 		method := svcType.Method(i)
 		if isRPCMethod(method.Name) {
@@ -100,8 +100,10 @@ func (h *MethodHandler) call(params Params) interface{} {
 
 func (h *MethodHandler) recoverFromError(resp transport.ResponseWriter) {
 	if err := recover(); err != nil {
-		log.Println("Recovered from handler error", err)
-		// TODO: Write to log ...
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Error("Recovered from handler")
+		// TODO: WithTrace() ? https://github.com/Sirupsen/logrus/pull/284
 		debug.PrintStack()
 		resp.WriteError(protocol.InternalError)
 	}

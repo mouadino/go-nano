@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/mouadino/go-nano/header"
 )
@@ -79,9 +80,11 @@ func (t *HTTPTransport) Listen(address string) {
 	t.mux.HandleFunc("/rpc/", t.handler)
 	listner, err := net.Listen("tcp", address)
 	if err != nil {
-		log.Fatalf("Listening failed: %s", err)
+		log.Fatal("Listening failed: %s", err)
 	}
-	log.Printf("Listening on %s\n", listner.Addr())
+	log.WithFields(log.Fields{
+		"address": listner.Addr(),
+	}).Info("Listening")
 	http.Serve(listner, t.mux)
 }
 

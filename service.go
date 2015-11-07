@@ -1,10 +1,11 @@
 package nano
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
+
+	log "github.com/Sirupsen/logrus"
 
 	"github.com/mouadino/go-nano/handler"
 	"github.com/mouadino/go-nano/protocol"
@@ -41,7 +42,9 @@ func (s *Service) ListenAndServe() {
 	if s, ok := s.svc.(Startable); ok {
 		err := s.NanoStart()
 		if err != nil {
-			log.Fatalf("Service failed to start: %s", err)
+			log.WithFields(log.Fields{
+				"error": err,
+			}).Fatal("Service failed to start")
 		}
 		defer s.NanoStop()
 	}
@@ -54,7 +57,6 @@ func (s *Service) ListenAndServe() {
 func (s *Service) loop() {
 	for {
 		resp, req := s.proto.ReceiveRequest()
-		log.Printf("%s -> %s\n", req, resp)
 		go s.handler.Handle(resp, req)
 	}
 }
