@@ -1,51 +1,42 @@
 package transport
 
-import "github.com/mouadino/go-nano/header"
-
 type InMemoryTransport struct {
-	ch chan Data
+	reqs  chan Request
+	resps [][]byte
 }
 
-func NewInMemoryTransport(data ...Data) *InMemoryTransport {
-	ch := make(chan Data, len(data)+1)
-	for _, d := range data {
-		ch <- d
+func NewInMemoryTransport(reqs [][]byte, resps [][]byte) *InMemoryTransport {
+	ch := make(chan Request, len(reqs)+1)
+	for _, b := range reqs {
+		ch <- Request{b, &DummyResponseWriter{}}
 	}
-	return &InMemoryTransport{ch}
+	return &InMemoryTransport{
+		ch,
+		resps,
+	}
 }
 
-func (t *InMemoryTransport) Receive() <-chan Data {
-	return t.ch
+func (trans *InMemoryTransport) Receive() <-chan Request {
+	return trans.reqs
 }
 
-func (t *InMemoryTransport) Send(endpoint string, data []byte) (ResponseReader, error) {
-	return &DummyResponseReader{}, nil
+func (trans *InMemoryTransport) Send(endpoint string, data []byte) ([]byte, error) {
+	return trans.resps[0], nil
 }
 
 func (t *InMemoryTransport) Listen(e string) {}
 
-type DummyResponseReader struct{}
-
-func (t *DummyResponseReader) Read() ([]byte, error) {
-	return []byte{}, nil
-}
-
 type DummyResponseWriter struct {
-	Data       interface{}
-	HeaderData header.Header
-	Error      error
+	Data  interface{}
+	Error error
 }
 
-func (w *DummyResponseWriter) Write(data interface{}) error {
-	w.Data = data
+func (rw *DummyResponseWriter) Write(data interface{}) error {
+	rw.Data = data
 	return nil
 }
 
-func (w *DummyResponseWriter) WriteError(err error) error {
-	w.Error = err
+func (rw *DummyResponseWriter) WriteError(err error) error {
+	rw.Error = err
 	return nil
-}
-
-func (w *DummyResponseWriter) Header() header.Header {
-	return w.HeaderData // FIXME: w.resp.Header()
 }

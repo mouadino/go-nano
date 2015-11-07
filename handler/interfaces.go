@@ -1,12 +1,9 @@
 package handler
 
-import (
-	"github.com/mouadino/go-nano/protocol"
-	"github.com/mouadino/go-nano/transport"
-)
+import "github.com/mouadino/go-nano/protocol"
 
 type Handler interface {
-	Handle(transport.ResponseWriter, *protocol.Request)
+	Handle(protocol.ResponseWriter, *protocol.Request)
 }
 
 type Middleware func(Handler) Handler

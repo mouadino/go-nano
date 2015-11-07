@@ -3,40 +3,12 @@ package transport
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 
 	log "github.com/Sirupsen/logrus"
-
-	"github.com/mouadino/go-nano/header"
 )
-
-type ResponsePromise struct {
-	ready chan struct{}
-	resp  http.Response
-	err   error
-}
-
-func (r *ResponsePromise) Read() ([]byte, error) {
-	<-r.ready
-	if r.err != nil {
-		return []byte{}, r.err
-	}
-	defer r.resp.Body.Close()
-	return ioutil.ReadAll(r.resp.Body)
-}
-
-func (r *ResponsePromise) setError(err error) {
-	r.err = err
-	r.ready <- struct{}{}
-}
-
-func (r *ResponsePromise) set(resp http.Response) {
-	r.resp = resp
-	r.ready <- struct{}{}
-}
 
 type HTTPResponseWriter struct {
 	sent chan struct{}
@@ -52,32 +24,20 @@ func (w *HTTPResponseWriter) Write(data interface{}) error {
 	return nil
 }
 
-// FIXME: We should not have to define this here !
-// TODO: Split transport.ResponseWriter vs protocol.ResponseWriter
-func (w *HTTPResponseWriter) WriteError(err error) error {
-	return nil
-}
-
-func (w *HTTPResponseWriter) Header() header.Header {
-	return map[string][]string{} // FIXME: w.resp.Header()
-}
-
 type HTTPTransport struct {
 	mux  *http.ServeMux
-	reqs chan Data
+	reqs chan Request
 }
 
-// TODO: Pipelining !?
 func NewHTTPTransport() *HTTPTransport {
 	return &HTTPTransport{
-		mux: http.NewServeMux(),
-		// TODO: Buffered or unbuffered !?
-		reqs: make(chan Data),
+		mux:  http.NewServeMux(),
+		reqs: make(chan Request),
 	}
 }
 
-func (t *HTTPTransport) Listen(address string) {
-	t.mux.HandleFunc("/rpc/", t.handler)
+func (trans *HTTPTransport) Listen(address string) {
+	trans.mux.HandleFunc("/rpc/", trans.handler)
 	listner, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatal("Listening failed: %s", err)
@@ -85,18 +45,21 @@ func (t *HTTPTransport) Listen(address string) {
 	log.WithFields(log.Fields{
 		"address": listner.Addr(),
 	}).Info("Listening")
-	http.Serve(listner, t.mux)
+	http.Serve(listner, trans.mux)
 }
 
-func (t *HTTPTransport) handler(w http.ResponseWriter, r *http.Request) {
-	body, _ := ioutil.ReadAll(r.Body)
-	defer r.Body.Close()
-	// TODO: Handle errors.
+func (trans *HTTPTransport) handler(rw http.ResponseWriter, req *http.Request) {
+	body, err := ioutil.ReadAll(req.Body)
+	defer req.Body.Close()
+	if err != nil {
+		log.Error("Transport error: %s", err)
+		return
+	}
 	resp := HTTPResponseWriter{
 		make(chan struct{}),
-		w,
+		rw,
 	}
-	t.reqs <- Data{
+	trans.reqs <- Request{
 		Body: body,
 		Resp: &resp,
 	}
@@ -105,25 +68,16 @@ func (t *HTTPTransport) handler(w http.ResponseWriter, r *http.Request) {
 	<-resp.sent
 }
 
-func (t *HTTPTransport) Send(endpoint string, b []byte) (ResponseReader, error) {
-	resp := ResponsePromise{ready: make(chan struct{})}
-	go t.sendHTTP(endpoint, bytes.NewReader(b), &resp)
-	// TODO: How about errors !?
-	return &resp, nil
-}
-
-func (t *HTTPTransport) sendHTTP(endpoint string, body io.Reader, resp *ResponsePromise) {
+func (trans *HTTPTransport) Send(endpoint string, body []byte) ([]byte, error) {
 	endpoint = fmt.Sprintf("%s/rpc/", endpoint)
 	// TODO: content-type doesn't belong here.
-	r, err := http.Post(endpoint, "application/json-rpc", body)
+	resp, err := http.Post(endpoint, "application/json-rpc", bytes.NewReader(body))
 	if err != nil {
-		resp.setError(err)
-		return
+		return nil, err
 	}
-	// TODO: What should we when resp is not 200 !?
-	resp.set(*r)
+	return ioutil.ReadAll(resp.Body)
 }
 
-func (t *HTTPTransport) Receive() <-chan Data {
-	return t.reqs
+func (trans *HTTPTransport) Receive() <-chan Request {
+	return trans.reqs
 }

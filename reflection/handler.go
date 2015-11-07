@@ -10,7 +10,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/mouadino/go-nano/protocol"
-	"github.com/mouadino/go-nano/transport"
 )
 
 var publicMethod = regexp.MustCompile("^[A-Z]")
@@ -41,7 +40,7 @@ func isRPCMethod(name string) bool {
 	return publicMethod.MatchString(name) && !strings.HasPrefix(name, "Nano")
 }
 
-func (h *StructHandler) Handle(resp transport.ResponseWriter, req *protocol.Request) {
+func (h *StructHandler) Handle(resp protocol.ResponseWriter, req *protocol.Request) {
 	name := req.Method
 	fh, ok := h.methods[name]
 	if !ok {
@@ -56,7 +55,7 @@ type MethodHandler struct {
 	method reflect.Method
 }
 
-func (h *MethodHandler) Handle(resp transport.ResponseWriter, req *protocol.Request) {
+func (h *MethodHandler) Handle(resp protocol.ResponseWriter, req *protocol.Request) {
 	defer h.recoverFromError(resp)
 
 	params, err := h.parseParams(req)
@@ -98,7 +97,7 @@ func (h *MethodHandler) call(params Params) interface{} {
 	return data
 }
 
-func (h *MethodHandler) recoverFromError(resp transport.ResponseWriter) {
+func (h *MethodHandler) recoverFromError(resp protocol.ResponseWriter) {
 	if err := recover(); err != nil {
 		log.WithFields(log.Fields{
 			"error": err,

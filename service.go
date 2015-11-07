@@ -9,7 +9,9 @@ import (
 
 	"github.com/mouadino/go-nano/handler"
 	"github.com/mouadino/go-nano/protocol"
+	"github.com/mouadino/go-nano/protocol/jsonrpc"
 	"github.com/mouadino/go-nano/reflection"
+	"github.com/mouadino/go-nano/serializer"
 	"github.com/mouadino/go-nano/transport"
 )
 
@@ -18,7 +20,7 @@ func Default(service interface{}) *Service {
 	return Custom(
 		service,
 		trans,
-		protocol.NewJSONRPCProtocol(trans),
+		jsonrpc.NewJSONRPCProtocol(trans, serializer.JSONSerializer{}),
 	)
 }
 
@@ -48,7 +50,6 @@ func (s *Service) ListenAndServe() {
 		}
 		defer s.NanoStop()
 	}
-	// TODO: goroutine Pool.
 	go s.trans.Listen(":0")
 	go s.loop()
 	s.waitForTermination()
