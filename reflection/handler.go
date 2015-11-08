@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
-	"runtime/debug"
 	"strings"
-
-	log "github.com/Sirupsen/logrus"
 
 	"github.com/mouadino/go-nano/protocol"
 )
@@ -56,8 +53,6 @@ type MethodHandler struct {
 }
 
 func (h *MethodHandler) Handle(resp protocol.ResponseWriter, req *protocol.Request) {
-	defer h.recoverFromError(resp)
-
 	params, err := h.parseParams(req)
 	if err != nil {
 		resp.WriteError(err)
@@ -95,15 +90,4 @@ func (h *MethodHandler) call(params Params) interface{} {
 		return data[0]
 	}
 	return data
-}
-
-func (h *MethodHandler) recoverFromError(resp protocol.ResponseWriter) {
-	if err := recover(); err != nil {
-		log.WithFields(log.Fields{
-			"error": err,
-		}).Error("Recovered from handler")
-		// TODO: WithTrace() ? https://github.com/Sirupsen/logrus/pull/284
-		debug.PrintStack()
-		resp.WriteError(protocol.InternalError)
-	}
 }

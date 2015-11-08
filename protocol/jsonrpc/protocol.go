@@ -1,6 +1,7 @@
 package jsonrpc
 
 import (
+	"github.com/mouadino/go-nano/header"
 	"github.com/mouadino/go-nano/protocol"
 	"github.com/mouadino/go-nano/serializer"
 	"github.com/mouadino/go-nano/transport"
@@ -66,8 +67,10 @@ func (proto *JSONRPCProtocol) ReceiveRequest() (protocol.ResponseWriter, *protoc
 	if err != nil {
 		return nil, nil
 	}
-	return &JSONRPCResponseWriter{
+	rw := &JSONRPCResponseWriter{
 		b.Resp,
 		proto,
-	}, body.ToRequest()
+		header.Header{},
+	}
+	return rw, body.ToRequest()
 }

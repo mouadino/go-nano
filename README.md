@@ -17,18 +17,18 @@ Developers should focus on writing the business logic.
 - Convention over configuration
 - RPC.
 
-### Schema
+### Components
                                         +------------ +     +---------+     +---------+
                                         | Middlewares | <-> | Handler | <-> | Service |
                                         +------------ +     +---------+     +---------+
     +-----------+     +----------+
     | Transport | <-> | Protocol | <->
     +-----------+     +----------+
-                                         +------------ +     +---------+
-                                         | Extensions  | <-> | Client  |
-                                         +------------ +     +---------+
+                                        +------------ +     +---------+
+                                        | Extensions  | <-> | Client  |
+                                        +------------ +     +---------+
 
-## TODO
+## Features
 
 Transports:
 
@@ -38,21 +38,21 @@ Transports:
 
 Protocols:
 
-- [ ] JSON-RPC Protocol
+- [X] JSON-RPC Protocol
 - [ ] MSGPACK-RPC Protocol
 - [ ] Lymph Protocol
 
-Client
+Client:
 
 - [X] Client
-- [ ] Command line
+- [X] Command line
 - [ ] Circuit Breaker
 
 Misc:
 
 - [ ] Remote errors
 - [ ] Configuration handling
-- [ ] Middlewares (Tracing, Rate limit ...)
+- [X] Middlewares (Tracing, Rate limit ...)
 - [ ] Logging
 - [ ] Metrics
 - [ ] Discovery

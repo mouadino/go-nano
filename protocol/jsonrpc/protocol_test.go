@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/mouadino/go-nano/header"
 	"github.com/mouadino/go-nano/protocol"
 	"github.com/mouadino/go-nano/serializer"
 	"github.com/mouadino/go-nano/transport"
@@ -39,7 +40,11 @@ func TestSendRequest(t *testing.T) {
 	)
 	proto := NewJSONRPCProtocol(trans, serializer.JSONSerializer{})
 
-	req := protocol.Request{"upper", protocol.Params{"text": "foobar"}}
+	req := protocol.Request{
+		"upper",
+		protocol.Params{"text": "foobar"},
+		header.Header{},
+	}
 	resp, err := proto.SendRequest("", &req)
 
 	if err != nil {
@@ -57,7 +62,11 @@ func TestSendRequestWithError(t *testing.T) {
 	)
 	proto := NewJSONRPCProtocol(trans, serializer.JSONSerializer{})
 
-	req := protocol.Request{"upper", protocol.Params{"text": "foobar"}}
+	req := protocol.Request{
+		"upper",
+		protocol.Params{"text": "foobar"},
+		header.Header{},
+	}
 	_, err := proto.SendRequest("", &req)
 
 	if err != protocol.ServerError {

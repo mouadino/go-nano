@@ -8,6 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	"github.com/mouadino/go-nano/handler"
+	"github.com/mouadino/go-nano/handler/middleware"
 	"github.com/mouadino/go-nano/protocol"
 	"github.com/mouadino/go-nano/protocol/jsonrpc"
 	"github.com/mouadino/go-nano/reflection"
@@ -21,15 +22,22 @@ func Default(service interface{}) *Service {
 		service,
 		trans,
 		jsonrpc.NewJSONRPCProtocol(trans, serializer.JSONSerializer{}),
+		middleware.NewRecoverMiddleware(log.New(), true, 8*1024),
+		middleware.NewTraceMiddleware(),
+		middleware.NewLoggerMiddleware(log.New()),
 	)
 }
 
-func Custom(svc interface{}, trans transport.Transport, proto protocol.Protocol) *Service {
+func Custom(svc interface{}, trans transport.Transport, proto protocol.Protocol, middlewares ...handler.Middleware) *Service {
+	handler := middleware.Chain(
+		reflection.FromStruct(svc),
+		middlewares...,
+	)
 	return &Service{
 		svc:     svc,
 		trans:   trans,
 		proto:   proto,
-		handler: reflection.FromStruct(svc),
+		handler: handler,
 	}
 }
 

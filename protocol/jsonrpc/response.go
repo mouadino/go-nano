@@ -1,6 +1,9 @@
 package jsonrpc
 
-import "github.com/mouadino/go-nano/transport"
+import (
+	"github.com/mouadino/go-nano/header"
+	"github.com/mouadino/go-nano/transport"
+)
 
 type ResponseBody struct {
 	Version string      `json:"jsonrpc"`
@@ -21,6 +24,7 @@ func NewResponseBody(res interface{}, err error) *ResponseBody {
 type JSONRPCResponseWriter struct {
 	transRW transport.ResponseWriter
 	proto   *JSONRPCProtocol
+	header  header.Header
 }
 
 func (rw *JSONRPCResponseWriter) Write(data interface{}) error {
@@ -38,5 +42,10 @@ func (rw *JSONRPCResponseWriter) writeToTransport(body *ResponseBody) error {
 	if err != nil {
 		return err
 	}
+	// TODO: Write headers too !
 	return rw.transRW.Write(b)
+}
+
+func (rw *JSONRPCResponseWriter) Header() header.Header {
+	return rw.header
 }
