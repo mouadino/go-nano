@@ -1,4 +1,4 @@
-package reflection
+package handler
 
 import (
 	"fmt"
@@ -11,14 +11,30 @@ import (
 
 var publicMethod = regexp.MustCompile("^[A-Z]")
 
+type Configurable interface {
+	NanoConfigure(interface{}) error
+}
+
+type Startable interface {
+	NanoStart() error
+	NanoStop() error
+}
+
 type Params []reflect.Value
+
+func Reflect(svc interface{}) Handler {
+	if hdlr, ok := svc.(Handler); ok {
+		return hdlr
+	}
+	return NewStructHandler(svc)
+}
 
 type StructHandler struct {
 	svc     interface{}
 	methods map[string]MethodHandler
 }
 
-func FromStruct(svc interface{}) *StructHandler {
+func NewStructHandler(svc interface{}) *StructHandler {
 	methods := map[string]MethodHandler{}
 	svcType := reflect.TypeOf(svc)
 	for i := 0; i < svcType.NumMethod(); i++ {

@@ -9,11 +9,12 @@ export GOPATH
 default: build
 
 build:
-		go build -v -o nano-client ./cli/nano-client
+		go build -v -o _build/nano-client ./cli/nano-client
 
 examples:
-		go build -v -o upper ./examples/upper
-		go build -v -o demo ./examples/demo
+		go build -v -o _build/upper ./examples/upper
+		go build -v -o _build/upper2 ./examples/upper2
+		go build -v -o _build/demo ./examples/demo
 
 doc:
 		godoc -http=:6060 -index

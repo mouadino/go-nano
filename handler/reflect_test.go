@@ -1,4 +1,4 @@
-package reflection
+package handler
 
 import (
 	"testing"
@@ -18,7 +18,7 @@ func (s *EchoService) Echo(text string) string {
 }
 
 func TestReflection(t *testing.T) {
-	handler := FromStruct(&EchoService{})
+	handler := NewStructHandler(&EchoService{})
 
 	if len(handler.methods) != 1 {
 		t.Errorf("Expected %d method, got %d", 1, len(handler.methods))
@@ -26,7 +26,7 @@ func TestReflection(t *testing.T) {
 }
 
 func TestHandling(t *testing.T) {
-	handler := FromStruct(&EchoService{})
+	handler := NewStructHandler(&EchoService{})
 	req := protocol.Request{
 		Method: "echo",
 		Params: utils.ParamsFormat("foobar"),
@@ -46,7 +46,7 @@ func TestHandling(t *testing.T) {
 }
 
 func TestUnknownMethod(t *testing.T) {
-	handler := FromStruct(&EchoService{})
+	handler := NewStructHandler(&EchoService{})
 	req := protocol.Request{
 		Method: "blabla",
 		Params: utils.ParamsFormat("foobar"),
@@ -61,7 +61,7 @@ func TestUnknownMethod(t *testing.T) {
 }
 
 func TestWrongArgumentsMethod(t *testing.T) {
-	handler := FromStruct(&EchoService{})
+	handler := NewStructHandler(&EchoService{})
 	req := protocol.Request{
 		Method: "echo",
 		Params: utils.ParamsFormat("foobar", 1),

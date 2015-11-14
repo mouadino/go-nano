@@ -16,8 +16,9 @@ func (echoService) NanoStart() error {
 	return nil
 }
 
-func (echoService) NanoStop() {
+func (echoService) NanoStop() error {
 	log.Debug("Stopping ...")
+	return nil
 }
 
 func (echoService) Upper(s string) string {
@@ -30,5 +31,7 @@ func main() {
 	)
 	server := nano.DefaultServer(echoService{})
 	server.Announce("upper", discovery.ServiceMetadata{}, zkAnnouncer)
-	server.ListenAndServe()
+	if err := server.ListenAndServe(); err != nil {
+		panic(err)
+	}
 }

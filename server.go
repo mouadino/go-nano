@@ -12,65 +12,84 @@ import (
 	"github.com/mouadino/go-nano/handler/middleware"
 	"github.com/mouadino/go-nano/protocol"
 	"github.com/mouadino/go-nano/protocol/jsonrpc"
-	"github.com/mouadino/go-nano/reflection"
 	"github.com/mouadino/go-nano/serializer"
 	"github.com/mouadino/go-nano/transport"
 )
 
-func DefaultServer(service interface{}) *Server {
+type Hook func() error
+
+type Hooks []Hook
+
+func (hs Hooks) Call() error {
+	for _, h := range hs {
+		err := h()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type Server struct {
+	trans   transport.Transport
+	proto   protocol.Protocol
+	hdlr    handler.Handler
+	onStart Hooks
+	onStop  Hooks
+}
+
+func DefaultServer(svc interface{}) *Server {
 	trans := transport.NewHTTPTransport()
-	return CustomServer(
-		service,
+	server := CustomServer(
+		handler.Reflect(svc),
 		trans,
 		jsonrpc.NewJSONRPCProtocol(trans, serializer.JSONSerializer{}),
 		middleware.NewRecoverMiddleware(log.New(), true, 8*1024),
 		middleware.NewTraceMiddleware(),
 		middleware.NewLoggerMiddleware(log.New()),
 	)
-}
-
-func CustomServer(svc interface{}, trans transport.Transport, proto protocol.Protocol, middlewares ...handler.Middleware) *Server {
-	handler := middleware.Chain(
-		reflection.FromStruct(svc),
-		middlewares...,
-	)
-	server := &Server{
-		svc:     svc,
-		trans:   trans,
-		proto:   proto,
-		handler: handler,
+	if svc, ok := svc.(handler.Startable); ok {
+		server.OnStart(Hook(svc.NanoStart))
+		server.OnStop(Hook(svc.NanoStop))
 	}
-	// FIXME: Not Good :(
-	server.trans.Listen("127.0.0.1:0")
 	return server
 }
 
-type Server struct {
-	trans   transport.Transport
-	proto   protocol.Protocol
-	handler handler.Handler
-	svc     interface{}
+func CustomServer(hdlr handler.Handler, trans transport.Transport, proto protocol.Protocol, middlewares ...handler.Middleware) *Server {
+	hdlr = middleware.Chain(
+		hdlr,
+		middlewares...,
+	)
+	return &Server{
+		trans: trans,
+		proto: proto,
+		hdlr:  hdlr,
+	}
 }
 
-func (s *Server) ListenAndServe() {
-	if svc, ok := s.svc.(Startable); ok {
-		err := svc.NanoStart()
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error": err,
-			}).Fatal("Server failed to start")
-		}
-		defer svc.NanoStop()
-	}
+func (s *Server) OnStart(h ...Hook) {
+	s.onStart = append(s.onStart, h...)
+}
 
+func (s *Server) OnStop(h ...Hook) {
+	s.onStop = append(s.onStop, h...)
+}
+
+func (s *Server) ListenAndServe() error {
+	s.trans.Listen("127.0.0.1:0")
+	err := s.onStart.Call()
+	if err != nil {
+		return err
+	}
 	go s.loop()
 	s.waitForTermination()
+	return s.onStop.Call()
 }
 
 func (s *Server) loop() {
 	for {
 		resp, req := s.proto.ReceiveRequest()
-		go s.handler.Handle(resp, req)
+		go s.hdlr.Handle(resp, req)
 	}
 }
 
@@ -83,16 +102,18 @@ func (s *Server) waitForTermination() {
 	}
 }
 
-func (s *Server) Announce(name string, serviceMeta discovery.ServiceMetadata, announcer discovery.Announcer) error {
-	trans := s.trans.(transport.Listener)
-	instance, err := discovery.NewInstance(
-		discovery.NewServiceMetadata(
-			trans.Addr(),
-			serviceMeta,
-		),
-	)
-	if err != nil {
-		return err
-	}
-	return announcer.Announce(name, instance)
+func (s *Server) Announce(name string, serviceMeta discovery.ServiceMetadata, announcer discovery.Announcer) {
+	s.OnStart(Hook(func() error {
+		trans := s.trans.(transport.Listener)
+		instance, err := discovery.NewInstance(
+			discovery.NewServiceMetadata(
+				trans.Addr(),
+				serviceMeta,
+			),
+		)
+		if err != nil {
+			return err
+		}
+		return announcer.Announce(name, instance)
+	}))
 }
