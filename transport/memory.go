@@ -26,6 +26,10 @@ func (trans *InMemoryTransport) Send(endpoint string, data []byte) ([]byte, erro
 
 func (t *InMemoryTransport) Listen(e string) {}
 
+func (t *InMemoryTransport) Endpoint() string {
+	return "<memory>"
+}
+
 type DumpResponseWriter struct {
 	Data interface{}
 }

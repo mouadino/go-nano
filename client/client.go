@@ -1,21 +1,14 @@
 package client
 
-import (
-	"github.com/mouadino/go-nano/protocol"
-	"github.com/mouadino/go-nano/utils"
-)
+import "github.com/mouadino/go-nano/protocol"
 
 type DefaultClient struct {
-	Endpoint string
-	Proto    protocol.Protocol
+	Proto protocol.Protocol
 }
 
-func (c *DefaultClient) Call(method string, params ...interface{}) (interface{}, error) {
-	req := protocol.Request{
-		Method: method,
-		Params: utils.ParamsFormat(params...),
-	}
-	resp, err := c.Proto.SendRequest(c.Endpoint, &req)
+func (c *DefaultClient) CallEndpoint(endpoint string, req *protocol.Request) (interface{}, error) {
+	// TODO: Protocol factory from endpoint scheme.
+	resp, err := c.Proto.SendRequest(endpoint, req)
 	if err != nil {
 		return nil, err
 	}

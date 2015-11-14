@@ -7,6 +7,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 
+	"github.com/mouadino/go-nano/discovery"
 	"github.com/mouadino/go-nano/handler"
 	"github.com/mouadino/go-nano/handler/middleware"
 	"github.com/mouadino/go-nano/protocol"
@@ -16,9 +17,9 @@ import (
 	"github.com/mouadino/go-nano/transport"
 )
 
-func Default(service interface{}) *Service {
+func DefaultServer(service interface{}) *Server {
 	trans := transport.NewHTTPTransport()
-	return Custom(
+	return CustomServer(
 		service,
 		trans,
 		jsonrpc.NewJSONRPCProtocol(trans, serializer.JSONSerializer{}),
@@ -28,53 +29,70 @@ func Default(service interface{}) *Service {
 	)
 }
 
-func Custom(svc interface{}, trans transport.Transport, proto protocol.Protocol, middlewares ...handler.Middleware) *Service {
+func CustomServer(svc interface{}, trans transport.Transport, proto protocol.Protocol, middlewares ...handler.Middleware) *Server {
 	handler := middleware.Chain(
 		reflection.FromStruct(svc),
 		middlewares...,
 	)
-	return &Service{
+	server := &Server{
 		svc:     svc,
 		trans:   trans,
 		proto:   proto,
 		handler: handler,
 	}
+	// FIXME: Not Good :(
+	server.trans.Listen("127.0.0.1:0")
+	return server
 }
 
-type Service struct {
+type Server struct {
 	trans   transport.Transport
 	proto   protocol.Protocol
 	handler handler.Handler
 	svc     interface{}
 }
 
-func (s *Service) ListenAndServe() {
-	if s, ok := s.svc.(Startable); ok {
-		err := s.NanoStart()
+func (s *Server) ListenAndServe() {
+	if svc, ok := s.svc.(Startable); ok {
+		err := svc.NanoStart()
 		if err != nil {
 			log.WithFields(log.Fields{
 				"error": err,
-			}).Fatal("Service failed to start")
+			}).Fatal("Server failed to start")
 		}
-		defer s.NanoStop()
+		defer svc.NanoStop()
 	}
-	go s.trans.Listen(":0")
+
 	go s.loop()
 	s.waitForTermination()
 }
 
-func (s *Service) loop() {
+func (s *Server) loop() {
 	for {
 		resp, req := s.proto.ReceiveRequest()
 		go s.handler.Handle(resp, req)
 	}
 }
 
-func (s *Service) waitForTermination() {
+func (s *Server) waitForTermination() {
 	term := make(chan os.Signal)
 	signal.Notify(term, os.Interrupt, syscall.SIGTERM)
 	select {
 	case <-term:
 		log.Print("Received SIGTERM, exiting ...")
 	}
+}
+
+func (s *Server) Announce(name string, serviceMeta discovery.ServiceMetadata, announcer discovery.Announcer) error {
+	trans := s.trans.(transport.Listener)
+	instance, err := discovery.NewInstance(
+		discovery.NewServiceMetadata(
+			trans.Addr(),
+			serviceMeta,
+		),
+	)
+	if err != nil {
+		return err
+	}
+	return announcer.Announce(name, instance)
 }

@@ -10,6 +10,8 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+const RPCPath = "/rpc/"
+
 type HTTPResponseWriter struct {
 	sent chan struct{}
 	resp http.ResponseWriter
@@ -27,6 +29,7 @@ func (w *HTTPResponseWriter) Write(data interface{}) error {
 type HTTPTransport struct {
 	mux  *http.ServeMux
 	reqs chan Request
+	addr string
 }
 
 func NewHTTPTransport() *HTTPTransport {
@@ -37,13 +40,18 @@ func NewHTTPTransport() *HTTPTransport {
 }
 
 func (trans *HTTPTransport) Listen(address string) {
-	trans.mux.HandleFunc("/rpc/", trans.handler)
+	trans.mux.HandleFunc(RPCPath, trans.handler)
 	listner, err := net.Listen("tcp", address)
 	if err != nil {
 		log.Fatal("Listening failed: ", err)
 	}
-	log.Info("Listening on ", listner.Addr())
-	http.Serve(listner, trans.mux)
+	trans.addr = fmt.Sprintf("http://%s", listner.Addr().String())
+	log.Info("Listening on ", trans.addr)
+	go http.Serve(listner, trans.mux)
+}
+
+func (trans *HTTPTransport) Addr() string {
+	return trans.addr
 }
 
 func (trans *HTTPTransport) handler(rw http.ResponseWriter, req *http.Request) {
@@ -62,12 +70,12 @@ func (trans *HTTPTransport) handler(rw http.ResponseWriter, req *http.Request) {
 		Resp: &resp,
 	}
 	// Wait here else http.ResponseWriter became invalid.
-	// TODO: Timeout !?
+	// TODO: Timeout !?, http.Hijacker ?
 	<-resp.sent
 }
 
 func (trans *HTTPTransport) Send(endpoint string, body []byte) ([]byte, error) {
-	endpoint = fmt.Sprintf("%s/rpc/", endpoint)
+	endpoint += RPCPath
 	// TODO: content-type doesn't belong here.
 	resp, err := http.Post(endpoint, "application/json-rpc", bytes.NewReader(body))
 	if err != nil {

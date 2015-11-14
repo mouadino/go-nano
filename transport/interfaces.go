@@ -6,6 +6,10 @@ type Transport interface {
 	Send(string, []byte) ([]byte, error)
 }
 
+type Listener interface {
+	Addr() string
+}
+
 type ResponseWriter interface {
 	Write(interface{}) error
 }

@@ -3,6 +3,8 @@ package client
 import (
 	"errors"
 	"time"
+
+	"github.com/mouadino/go-nano/protocol"
 )
 
 var (
@@ -30,9 +32,9 @@ func NewTimeoutExt(timeout time.Duration) ClientExtension {
 	}
 }
 
-func (e *TimeoutExt) Call(method string, params ...interface{}) (interface{}, error) {
+func (e *TimeoutExt) CallEndpoint(endpoint string, req *protocol.Request) (interface{}, error) {
 	go func() {
-		data, err := e.client.Call(method, params...)
+		data, err := e.client.CallEndpoint(endpoint, req)
 		e.reply <- reply{data, err}
 	}()
 

@@ -6,6 +6,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 
 	nano "github.com/mouadino/go-nano"
+	"github.com/mouadino/go-nano/discovery"
 )
 
 type echoService struct{}
@@ -24,5 +25,10 @@ func (echoService) Upper(s string) string {
 }
 
 func main() {
-	nano.Default(echoService{}).ListenAndServe()
+	zkAnnouncer := discovery.DefaultZooKeeperAnnounceResolver(
+		[]string{"127.0.0.1:2181"},
+	)
+	server := nano.DefaultServer(echoService{})
+	server.Announce("upper", discovery.ServiceMetadata{}, zkAnnouncer)
+	server.ListenAndServe()
 }

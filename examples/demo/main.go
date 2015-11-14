@@ -2,15 +2,12 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	nano "github.com/mouadino/go-nano"
 )
 
-// FIXME: Using dynamic port now.
-var address = fmt.Sprintf("http://127.0.0.1:%s", os.Getenv("PORT"))
-var echo = nano.DefaultClient(address)
+var echo = nano.DefaultClient("upper")
 
 func main() {
 	c := time.Tick(1 * time.Second)

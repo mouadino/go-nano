@@ -11,7 +11,7 @@ Developers should focus on writing the business logic.
 ### Highlight
 
 - Transport agnostic (TCP, HTTP, AMQP ...)
-- Protocol agnostic (JSON-RPC, MSGPACK-RPC, ...)
+- Protocol agnostic (JSON-RPC, ProtocolBuffer, ...)
 - Plain Old Go Struct for business logic
 - Handle boilerplate for setting up a service
 - Convention over configuration
@@ -38,7 +38,7 @@ Transports:
 
 Protocols:
 
-- [X] JSON-RPC Protocol
+- [X] JSON-RPC Protocol (Minimal)
 - [ ] MSGPACK-RPC Protocol
 - [ ] Lymph Protocol
 
@@ -47,13 +47,17 @@ Client:
 - [X] Client
 - [X] Command line
 - [ ] Circuit Breaker
+- [X] Timeout
+- [ ] Retry
+- [ ] Remote errors
+- [ ] Async
 
 Misc:
 
-- [ ] Remote errors
-- [ ] Configuration handling
+- [ ] Configuration
 - [X] Middlewares (Tracing, Rate limit ...)
 - [ ] Logging
+- [ ] Context
 - [ ] Metrics
 - [ ] Discovery
 - [ ] Testing tools

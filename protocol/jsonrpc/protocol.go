@@ -5,6 +5,8 @@ import (
 	"github.com/mouadino/go-nano/protocol"
 	"github.com/mouadino/go-nano/serializer"
 	"github.com/mouadino/go-nano/transport"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type RequestBody struct {
@@ -34,11 +36,18 @@ func NewJSONRPCProtocol(trans transport.Transport, serial serializer.Serializer)
 }
 
 func (proto *JSONRPCProtocol) SendRequest(endpoint string, r *protocol.Request) (interface{}, error) {
+	log.WithFields(log.Fields{
+		"endpoint": endpoint,
+		"method":   r.Method,
+	}).Info("sending")
 	reqBody, err := proto.getBody(r)
 	if err != nil {
 		return nil, err
 	}
 	resp, err := proto.trans.Send(endpoint, reqBody)
+	if err != nil {
+		return nil, err
+	}
 	respBody := ResponseBody{}
 	err = proto.serial.Decode(resp, &respBody)
 	if err != nil {
