@@ -76,7 +76,7 @@ func (s *Server) OnStop(h ...Hook) {
 }
 
 func (s *Server) ListenAndServe() error {
-	s.trans.Listen("127.0.0.1:0")
+	s.trans.Listen()
 	err := s.onStart.Call()
 	if err != nil {
 		return err

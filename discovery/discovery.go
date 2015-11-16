@@ -22,6 +22,7 @@ type AnnounceResolver interface {
 }
 
 type LoadBalancer interface {
+	// TODO: Endpoint([]Instance) ?
 	Endpoint(*Service) (Endpoint, error)
 }
 

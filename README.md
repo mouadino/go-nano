@@ -59,7 +59,7 @@ Misc:
 - [ ] Logging
 - [ ] Context
 - [ ] Metrics
-- [ ] Discovery
+- [X] Discovery
 - [ ] Testing tools
 - [ ] Notification (a.k.a One way message)
 

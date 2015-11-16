@@ -24,7 +24,9 @@ func (trans *InMemoryTransport) Send(endpoint string, data []byte) ([]byte, erro
 	return trans.resps[0], nil
 }
 
-func (t *InMemoryTransport) Listen(e string) {}
+func (t *InMemoryTransport) Listen() error {
+	return nil
+}
 
 func (t *InMemoryTransport) Endpoint() string {
 	return "<memory>"
@@ -34,7 +36,7 @@ type DumpResponseWriter struct {
 	Data interface{}
 }
 
-func (rw *DumpResponseWriter) Write(data interface{}) error {
+func (rw *DumpResponseWriter) Write(data []byte) error {
 	rw.Data = data
 	return nil
 }

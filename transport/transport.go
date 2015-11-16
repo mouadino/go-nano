@@ -1,7 +1,7 @@
 package transport
 
 type Transport interface {
-	Listen(string)
+	Listen() error
 	Receive() <-chan Request
 	Send(string, []byte) ([]byte, error)
 }
@@ -11,7 +11,8 @@ type Listener interface {
 }
 
 type ResponseWriter interface {
-	Write(interface{}) error
+	Write([]byte) error
+	// TODO: Write should be only called once !?
 }
 
 type Request struct {

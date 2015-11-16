@@ -17,8 +17,8 @@ type HTTPResponseWriter struct {
 	resp http.ResponseWriter
 }
 
-func (w *HTTPResponseWriter) Write(data interface{}) error {
-	_, err := w.resp.Write(data.([]byte))
+func (w *HTTPResponseWriter) Write(data []byte) error {
+	_, err := w.resp.Write(data)
 	if err != nil {
 		return err
 	}
@@ -32,22 +32,23 @@ type HTTPTransport struct {
 	addr string
 }
 
-func NewHTTPTransport() *HTTPTransport {
+func NewHTTPTransport() Transport {
 	return &HTTPTransport{
 		mux:  http.NewServeMux(),
 		reqs: make(chan Request),
 	}
 }
 
-func (trans *HTTPTransport) Listen(address string) {
+func (trans *HTTPTransport) Listen() error {
 	trans.mux.HandleFunc(RPCPath, trans.handler)
-	listner, err := net.Listen("tcp", address)
+	listner, err := net.Listen("tcp", ":0")
 	if err != nil {
-		log.Fatal("Listening failed: ", err)
+		return err
 	}
 	trans.addr = fmt.Sprintf("http://%s", listner.Addr().String())
 	log.Info("Listening on ", trans.addr)
 	go http.Serve(listner, trans.mux)
+	return nil
 }
 
 func (trans *HTTPTransport) Addr() string {
