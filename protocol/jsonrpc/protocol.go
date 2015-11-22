@@ -72,7 +72,7 @@ func (proto *JSONRPCProtocol) getBody(r *protocol.Request) ([]byte, error) {
 func (proto *JSONRPCProtocol) ReceiveRequest() (protocol.ResponseWriter, *protocol.Request) {
 	b := <-proto.trans.Receive()
 	body := RequestBody{}
-	err := proto.serial.Decode(b.Body, &body)
+	err := proto.serial.Decode(b.Body.([]byte), &body)
 	if err != nil {
 		return nil, nil
 	}

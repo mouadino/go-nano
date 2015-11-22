@@ -12,12 +12,12 @@ import (
 	"github.com/mouadino/go-nano/utils"
 )
 
-type defaultClient struct {
+type Client struct {
 	endpoint string
 	client   client.Client
 }
 
-func DefaultClient(endpoint string) defaultClient {
+func DefaultClient(endpoint string) Client {
 	zkDiscover := discovery.DefaultZooKeeperAnnounceResolver(
 		[]string{"127.0.0.1:2181"},
 	)
@@ -32,17 +32,17 @@ func DefaultClient(endpoint string) defaultClient {
 	)
 }
 
-func CustomClient(endpoint string, proto protocol.Protocol, exts ...client.ClientExtension) defaultClient {
+func CustomClient(endpoint string, proto protocol.Protocol, exts ...client.ClientExtension) Client {
 	c := &client.DefaultClient{
 		Proto: proto,
 	}
-	return defaultClient{
+	return Client{
 		endpoint: endpoint,
 		client:   client.Decorate(c, exts...),
 	}
 }
 
-func (c *defaultClient) Call(method string, params ...interface{}) (interface{}, error) {
+func (c *Client) Call(method string, params ...interface{}) (interface{}, error) {
 	req := protocol.Request{
 		Method: method,
 		Params: utils.ParamsFormat(params...),

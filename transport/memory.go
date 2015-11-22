@@ -36,7 +36,7 @@ type DumpResponseWriter struct {
 	Data interface{}
 }
 
-func (rw *DumpResponseWriter) Write(data []byte) error {
+func (rw *DumpResponseWriter) Write(data interface{}) error {
 	rw.Data = data
 	return nil
 }

@@ -23,8 +23,8 @@ func NewAMQPResponseWriter(trans *AMQPTransport, delivery amqp.Delivery) Respons
 	}
 }
 
-func (rw *AMQPResponseWriter) Write(data []byte) error {
-	err := rw.trans.sendReply(rw.delivery.ReplyTo, rw.delivery.CorrelationId, data)
+func (rw *AMQPResponseWriter) Write(data interface{}) error {
+	err := rw.trans.sendReply(rw.delivery.ReplyTo, rw.delivery.CorrelationId, data.([]byte))
 	if err != nil {
 		return err
 	}

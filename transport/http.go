@@ -17,8 +17,8 @@ type HTTPResponseWriter struct {
 	resp http.ResponseWriter
 }
 
-func (w *HTTPResponseWriter) Write(data []byte) error {
-	_, err := w.resp.Write(data)
+func (w *HTTPResponseWriter) Write(data interface{}) error {
+	_, err := w.resp.Write(data.([]byte))
 	if err != nil {
 		return err
 	}
