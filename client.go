@@ -5,6 +5,7 @@ import (
 
 	"github.com/mouadino/go-nano/client"
 	"github.com/mouadino/go-nano/discovery"
+	"github.com/mouadino/go-nano/discovery/loadbalancer"
 	"github.com/mouadino/go-nano/protocol"
 	"github.com/mouadino/go-nano/protocol/jsonrpc"
 	"github.com/mouadino/go-nano/serializer"
@@ -25,9 +26,9 @@ func DefaultClient(endpoint string) Client {
 		endpoint,
 		jsonrpc.NewJSONRPCProtocol(transport.NewHTTPTransport(), serializer.JSONSerializer{}),
 		client.NewTimeoutExt(3*time.Second),
-		discovery.NewLoadBalancerExtension(
+		loadbalancer.NewLoadBalancerExtension(
 			zkDiscover,
-			discovery.RoundRobinLoadBalancer(),
+			loadbalancer.RoundRobinLoadBalancer(),
 		),
 	)
 }

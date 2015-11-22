@@ -5,7 +5,7 @@ import (
 	"path"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/nu7hatch/gouuid"
+	"github.com/pborman/uuid"
 	"github.com/streadway/amqp"
 )
 
@@ -130,12 +130,7 @@ func (trans *AMQPTransport) Send(endpoint string, message []byte) ([]byte, error
 }
 
 func (trans *AMQPTransport) sendRequest(routingKey string, message []byte) (string, error) {
-	var correlationID string
-	if u, err := uuid.NewV4(); err != nil {
-		return "", err
-	} else {
-		correlationID = u.String()
-	}
+	correlationID := uuid.New()
 	// TODO: Expire time ?
 	msg := amqp.Publishing{
 		ContentType:   "text/plain",

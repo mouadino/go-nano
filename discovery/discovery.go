@@ -1,11 +1,9 @@
 package discovery
 
 import (
-	"errors"
 	"fmt"
-	"net/url"
 
-	"github.com/nu7hatch/gouuid"
+	"github.com/pborman/uuid"
 )
 
 type Resolver interface {
@@ -21,13 +19,6 @@ type AnnounceResolver interface {
 	Announcer
 }
 
-type LoadBalancer interface {
-	// TODO: Endpoint([]Instance) ?
-	Endpoint(*Service) (Endpoint, error)
-}
-
-var NoEndpointError = errors.New("No Endpoint")
-
 type Service struct {
 	Name      string
 	Instances []Instance
@@ -42,13 +33,9 @@ type Instance struct {
 	Meta ServiceMetadata
 }
 
-func NewInstance(meta ServiceMetadata) (Instance, error) {
-	id, err := uuid.NewV4()
-	if err != nil {
-		return Instance{}, err
-	}
-	instance := Instance{ID: id.String(), Meta: meta}
-	return instance, nil
+func NewInstance(meta ServiceMetadata) Instance {
+	instance := Instance{ID: uuid.New(), Meta: meta}
+	return instance
 }
 
 func (inst *Instance) String() string {
@@ -68,16 +55,6 @@ func NewServiceMetadata(endpoint string, meta map[string]interface{}) ServiceMet
 	return res
 }
 
-func (m ServiceMetadata) Endpoint() Endpoint {
-	return Endpoint(m["endpoint"].(string))
-}
-
-type Endpoint string
-
-func (e Endpoint) Type() (string, error) {
-	url, err := url.Parse(string(e))
-	if err != nil {
-		return "", err
-	}
-	return url.Scheme, nil
+func (m ServiceMetadata) Endpoint() string {
+	return m["endpoint"].(string)
 }

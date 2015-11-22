@@ -105,15 +105,12 @@ func (s *Server) waitForTermination() {
 func (s *Server) Announce(name string, serviceMeta discovery.ServiceMetadata, announcer discovery.Announcer) {
 	s.OnStart(Hook(func() error {
 		trans := s.trans.(transport.Listener)
-		instance, err := discovery.NewInstance(
+		instance := discovery.NewInstance(
 			discovery.NewServiceMetadata(
 				trans.Addr(),
 				serviceMeta,
 			),
 		)
-		if err != nil {
-			return err
-		}
 		return announcer.Announce(name, instance)
 	}))
 }

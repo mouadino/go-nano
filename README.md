@@ -39,7 +39,7 @@ Transports:
 Protocols:
 
 - [X] JSON-RPC Protocol (Minimal)
-- [ ] MSGPACK-RPC Protocol
+- [ ] ProtocolBuffer
 - [ ] Lymph Protocol
 
 Client:
@@ -60,7 +60,9 @@ Misc:
 - [ ] Context
 - [ ] Metrics
 - [X] Discovery
+- [ ] Messages
 - [ ] Testing tools
+- [ ] Protocol/Transport negotiation
 - [ ] Notification (a.k.a One way message)
 
 ## Examples
