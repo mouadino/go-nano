@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
-	"github.com/mouadino/go-nano"
+	"github.com/mouadino/go-nano/client"
 )
 
 func SendRequest(c *cli.Context) {
@@ -15,7 +15,7 @@ func SendRequest(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	client := nano.DefaultClient(c.String("service"))
+	client := client.DefaultClient(c.String("service"))
 
 	var params []interface{}
 	err := json.Unmarshal([]byte(c.String("params")), &params)

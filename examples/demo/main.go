@@ -4,20 +4,17 @@ import (
 	"fmt"
 	"time"
 
-	nano "github.com/mouadino/go-nano"
 	"github.com/mouadino/go-nano/client"
-	"github.com/mouadino/go-nano/protocol/jsonrpc"
-	"github.com/mouadino/go-nano/serializer"
-	"github.com/mouadino/go-nano/transport"
 )
 
-//var echo = nano.DefaultClient("upper")
-var amqpTrans = transport.NewAMQPTransport("amqp://127.0.0.1:5672")
-var echo = nano.CustomClient(
+var echo = client.DefaultClient("jsonrpc+amqp://127.0.0.1:5672/upper")
+
+/*var amqpTrans = transport.NewAMQPTransport("amqp://127.0.0.1:5672")
+var echo = client.CustomClient(
 	"upper",
 	jsonrpc.NewJSONRPCProtocol(amqpTrans, serializer.JSONSerializer{}),
-	client.NewTimeoutExt(3*time.Second),
-)
+	extension.NewTimeoutExt(3*time.Second),
+)*/
 
 func main() {
 	c := time.Tick(1 * time.Second)

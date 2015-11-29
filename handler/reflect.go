@@ -49,6 +49,7 @@ func NewStructHandler(svc interface{}) *StructHandler {
 	}
 }
 
+// TODO: https://github.com/golang/go/blob/master/src/net/rpc/server.go#L203
 func isRPCMethod(name string) bool {
 	return publicMethod.MatchString(name) && !strings.HasPrefix(name, "Nano")
 }
@@ -57,7 +58,7 @@ func (h *StructHandler) Handle(resp protocol.ResponseWriter, req *protocol.Reque
 	name := req.Method
 	fh, ok := h.methods[name]
 	if !ok {
-		resp.WriteError(protocol.UnknownMethod)
+		resp.SetError(protocol.UnknownMethod)
 		return
 	}
 	fh.Handle(resp, req)
@@ -71,12 +72,12 @@ type MethodHandler struct {
 func (h *MethodHandler) Handle(resp protocol.ResponseWriter, req *protocol.Request) {
 	params, err := h.parseParams(req)
 	if err != nil {
-		resp.WriteError(err)
+		resp.SetError(err)
 		return
 	}
 	// TODO: Returning error !? .NumOut() ... ?
 	data := h.call(params)
-	resp.Write(data)
+	resp.Set(data)
 }
 
 func (h *MethodHandler) parseParams(req *protocol.Request) (Params, error) {

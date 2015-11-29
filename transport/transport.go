@@ -5,6 +5,7 @@ package transport
 type Transport interface {
 	Listen() error
 	Receive() <-chan Request
+	// []byte -> io.Reader ?
 	Send(string, []byte) ([]byte, error)
 }
 

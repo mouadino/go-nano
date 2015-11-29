@@ -12,12 +12,12 @@ func (rw *DumpResponseWriter) Header() header.Header {
 	return rw.HeaderValues
 }
 
-func (rw *DumpResponseWriter) Write(data interface{}) error {
+func (rw *DumpResponseWriter) Set(data interface{}) error {
 	rw.Data = data
 	return nil
 }
 
-func (rw *DumpResponseWriter) WriteError(err error) error {
+func (rw *DumpResponseWriter) SetError(err error) error {
 	rw.Error = err
 	return nil
 }

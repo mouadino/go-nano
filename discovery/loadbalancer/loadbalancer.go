@@ -3,7 +3,7 @@ package loadbalancer
 import (
 	"errors"
 
-	"github.com/mouadino/go-nano/client"
+	"github.com/mouadino/go-nano/client/extension"
 	"github.com/mouadino/go-nano/discovery"
 	"github.com/mouadino/go-nano/protocol"
 )
@@ -15,22 +15,22 @@ type LoadBalancer interface {
 }
 
 type loadBalanderExtension struct {
-	client   client.Client
+	sender   protocol.Sender
 	lb       LoadBalancer
 	resolver discovery.Resolver
 }
 
-func NewLoadBalancerExtension(resolver discovery.Resolver, lb LoadBalancer) client.ClientExtension {
-	return func(c client.Client) client.Client {
+func NewLoadBalancerExtension(resolver discovery.Resolver, lb LoadBalancer) extension.Extension {
+	return func(s protocol.Sender) protocol.Sender {
 		return &loadBalanderExtension{
-			client:   c,
+			sender:   s,
 			lb:       lb,
 			resolver: resolver,
 		}
 	}
 }
 
-func (lb *loadBalanderExtension) CallEndpoint(endpoint string, req *protocol.Request) (interface{}, error) {
+func (lb *loadBalanderExtension) Send(endpoint string, req *protocol.Request) (*protocol.Response, error) {
 	svc, err := lb.resolver.Resolve(endpoint)
 	if err != nil {
 		return nil, err
@@ -39,7 +39,7 @@ func (lb *loadBalanderExtension) CallEndpoint(endpoint string, req *protocol.Req
 	if err != nil {
 		return nil, err
 	}
-	return lb.client.CallEndpoint(endpoint, req)
+	return lb.sender.Send(endpoint, req)
 }
 
 func (lb *loadBalanderExtension) getEndpoint(instances []discovery.Instance) (string, error) {

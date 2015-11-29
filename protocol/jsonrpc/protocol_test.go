@@ -22,7 +22,7 @@ func TestReceiveRequest(t *testing.T) {
 	)
 	proto := NewJSONRPCProtocol(trans, serializer.JSONSerializer{})
 
-	_, req := proto.ReceiveRequest()
+	_, req, _ := proto.Receive()
 
 	if req.Method != "upper" {
 		t.Errorf("Expected method %s, got %s", "upper", req.Method)
@@ -45,13 +45,13 @@ func TestSendRequest(t *testing.T) {
 		protocol.Params{"text": "foobar"},
 		header.Header{},
 	}
-	resp, err := proto.SendRequest("", &req)
+	resp, err := proto.Send("", &req)
 
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
 
-	if resp != "foobar" {
+	if resp.Body != "foobar" {
 		t.Errorf("Expected response to be 'foobar', was %v", resp)
 	}
 }
@@ -67,9 +67,9 @@ func TestSendRequestWithError(t *testing.T) {
 		protocol.Params{"text": "foobar"},
 		header.Header{},
 	}
-	_, err := proto.SendRequest("", &req)
+	resp, err := proto.Send("", &req)
 
-	if err != protocol.ServerError {
+	if resp.Error != protocol.ServerError {
 		t.Errorf("Error expected ServerError, else it was %s", err)
 	}
 }

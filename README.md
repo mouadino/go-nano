@@ -28,11 +28,12 @@ Developers should focus on writing the business logic.
                                         | Extensions  | <-> | Client  |
                                         +------------ +     +---------+
 
+
 ## Features
 
 Transports:
 
-- [ ] AMPQ Transport
+- [ ] AMQP Transport
 - [ ] ZeroMQ Transport
 - [X] HTTP Transport
 
@@ -59,11 +60,15 @@ Misc:
 - [ ] Logging
 - [ ] Context
 - [ ] Metrics
+- [ ] Multiple services namespaces (a la net/rpc)
 - [X] Discovery
 - [ ] Messages
 - [ ] Testing tools
 - [ ] Protocol/Transport negotiation
 - [ ] Notification (a.k.a One way message)
+- [ ] Add to travis/circleCI ...
+- [ ] GoDoc
+- [ ] More complete example (e.g. user service)
 
 ## Examples
 

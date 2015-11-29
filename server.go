@@ -1,3 +1,19 @@
+/*
+
+Usage:
+
+		type Upper struct {}
+
+		func (Upper) Handle(rw protocol.ResponseWriter, req protocol.Request) {
+			rw.Set(strings.ToUpper(text))
+		}
+
+		server := DefaultServer(proto)
+		server.Register("Upper", Upper{}, zkAnnouncer)
+
+		server.Serve()
+
+*/
 package nano
 
 import (
@@ -16,11 +32,12 @@ import (
 	"github.com/mouadino/go-nano/transport"
 )
 
+// Hook represent a callback to call.
 type Hook func() error
 
-type Hooks []Hook
+type hooks []Hook
 
-func (hs Hooks) Call() error {
+func (hs hooks) Call() error {
 	for _, h := range hs {
 		err := h()
 		if err != nil {
@@ -30,14 +47,18 @@ func (hs Hooks) Call() error {
 	return nil
 }
 
+// Server represent an RPC server.
 type Server struct {
 	trans   transport.Transport
 	proto   protocol.Protocol
 	hdlr    handler.Handler
-	onStart Hooks
-	onStop  Hooks
+	onStart hooks
+	onStop  hooks
 }
 
+// DefaultServer returns a new nano.Server using default configuration.
+// Default configuration include HTTP transport, JSONRPC as protocol and different
+// middlewares including logger, tracing and recovery.
 func DefaultServer(svc interface{}) *Server {
 	trans := transport.NewHTTPTransport()
 	server := CustomServer(
@@ -55,6 +76,7 @@ func DefaultServer(svc interface{}) *Server {
 	return server
 }
 
+// CustomServer returns a new nano.Server customized with specific transport, protocol and middelwares.
 func CustomServer(hdlr handler.Handler, trans transport.Transport, proto protocol.Protocol, middlewares ...handler.Middleware) *Server {
 	hdlr = middleware.Chain(
 		hdlr,
@@ -67,14 +89,18 @@ func CustomServer(hdlr handler.Handler, trans transport.Transport, proto protoco
 	}
 }
 
+// OnStart add a hook to be called when starting the server.
 func (s *Server) OnStart(h ...Hook) {
 	s.onStart = append(s.onStart, h...)
 }
 
+// OnStop add a hook to be called when stoping the server.
 func (s *Server) OnStop(h ...Hook) {
 	s.onStop = append(s.onStop, h...)
 }
 
+// ListenAndServe listens on transport addr (if there is any) and then
+// start handling requests from transport.
 func (s *Server) ListenAndServe() error {
 	s.trans.Listen()
 	err := s.onStart.Call()
@@ -88,7 +114,11 @@ func (s *Server) ListenAndServe() error {
 
 func (s *Server) loop() {
 	for {
-		resp, req := s.proto.ReceiveRequest()
+		resp, req, err := s.proto.Receive()
+		if err != nil {
+			log.Errorf("receive failed: %s", err)
+			continue
+		}
 		go s.hdlr.Handle(resp, req)
 	}
 }
@@ -102,6 +132,8 @@ func (s *Server) waitForTermination() {
 	}
 }
 
+// Announce register the RPC server in the passed announcer system under the given name with
+// specific metadata.
 func (s *Server) Announce(name string, serviceMeta discovery.ServiceMetadata, announcer discovery.Announcer) {
 	s.OnStart(Hook(func() error {
 		trans := s.trans.(transport.Listener)

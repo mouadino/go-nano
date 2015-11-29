@@ -2,11 +2,17 @@ package protocol
 
 import "github.com/mouadino/go-nano/header"
 
+type Sender interface {
+	Send(string, *Request) (*Response, error)
+}
+
+type Receiver interface {
+	Receive() (ResponseWriter, *Request, error)
+}
+
 type Protocol interface {
-	// TODO: SendRequest(string, *Request) (Response, error)
-	SendRequest(string, *Request) (interface{}, error)
-	// TODO: How to return an error ?
-	ReceiveRequest() (ResponseWriter, *Request)
+	Sender
+	Receiver
 }
 
 type Params map[string]interface{}
@@ -17,10 +23,16 @@ type Request struct {
 	Header header.Header
 }
 
+type Response struct {
+	Body   interface{}
+	Error  error
+	Header header.Header
+}
+
+// TODO: s/ResponseWriter/Responder/ ?
 type ResponseWriter interface {
 	Header() header.Header
 
-	// TODO: s/Write/Set ?
-	Write(interface{}) error
-	WriteError(err error) error
+	Set(interface{}) error
+	SetError(err error) error
 }

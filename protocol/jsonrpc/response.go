@@ -2,14 +2,28 @@ package jsonrpc
 
 import (
 	"github.com/mouadino/go-nano/header"
+	"github.com/mouadino/go-nano/protocol"
 	"github.com/mouadino/go-nano/transport"
 )
 
+// TODO: Rename message.
 type ResponseBody struct {
 	Version string      `json:"jsonrpc"`
 	Result  interface{} `json:"result"`
 	Error   *ErrorBody  `json:"error"`
 	Id      string      `json:"id"`
+}
+
+func (r *ResponseBody) ToResponse() *protocol.Response {
+	var err error
+	if r.Error != nil {
+		err = r.Error.Error()
+	}
+	return &protocol.Response{
+		Body:  r.Result,
+		Error: err,
+		// TODO: Header
+	}
 }
 
 func NewResponseBody(res interface{}, err error) *ResponseBody {
@@ -27,12 +41,12 @@ type JSONRPCResponseWriter struct {
 	header  header.Header
 }
 
-func (rw *JSONRPCResponseWriter) Write(data interface{}) error {
+func (rw *JSONRPCResponseWriter) Set(data interface{}) error {
 	body := NewResponseBody(data, nil)
 	return rw.writeToTransport(body)
 }
 
-func (rw *JSONRPCResponseWriter) WriteError(err error) error {
+func (rw *JSONRPCResponseWriter) SetError(err error) error {
 	body := NewResponseBody(nil, err)
 	return rw.writeToTransport(body)
 }

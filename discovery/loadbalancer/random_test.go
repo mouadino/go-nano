@@ -30,7 +30,7 @@ func TestRandomLoadBalancer(t *testing.T) {
 
 	for _, v := range cnts {
 		if math.Abs(float64(v-want)) > tolerance {
-			t.Errorf("expected %s[±%s], got %s", want, tolerance, v)
+			t.Errorf("expected %d[±%f], got %d", want, tolerance, v)
 		}
 	}
 }

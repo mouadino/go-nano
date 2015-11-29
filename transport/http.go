@@ -59,7 +59,7 @@ func (trans *HTTPTransport) handler(rw http.ResponseWriter, req *http.Request) {
 	body, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
 	if err != nil {
-		log.Error("Transport error: %s", err)
+		log.Errorf("Transport error: %s", err)
 		return
 	}
 	resp := HTTPResponseWriter{

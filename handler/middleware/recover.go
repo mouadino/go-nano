@@ -33,7 +33,7 @@ func (m *recoverMiddleware) Handle(rw protocol.ResponseWriter, req *protocol.Req
 
 func (m *recoverMiddleware) recover(rw protocol.ResponseWriter) {
 	if err := recover(); err != nil {
-		rw.WriteError(protocol.InternalError)
+		rw.SetError(protocol.InternalError)
 		m.logger.WithFields(log.Fields{
 			"error": err,
 		}).Error("Panic")

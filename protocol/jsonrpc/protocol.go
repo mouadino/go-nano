@@ -35,7 +35,7 @@ func NewJSONRPCProtocol(trans transport.Transport, serial serializer.Serializer)
 	}
 }
 
-func (proto *JSONRPCProtocol) SendRequest(endpoint string, r *protocol.Request) (interface{}, error) {
+func (proto *JSONRPCProtocol) Send(endpoint string, r *protocol.Request) (*protocol.Response, error) {
 	log.WithFields(log.Fields{
 		"endpoint": endpoint,
 		"method":   r.Method,
@@ -44,19 +44,16 @@ func (proto *JSONRPCProtocol) SendRequest(endpoint string, r *protocol.Request) 
 	if err != nil {
 		return nil, err
 	}
-	resp, err := proto.trans.Send(endpoint, reqBody)
+	b, err := proto.trans.Send(endpoint, reqBody)
 	if err != nil {
 		return nil, err
 	}
 	respBody := ResponseBody{}
-	err = proto.serial.Decode(resp, &respBody)
+	err = proto.serial.Decode(b, &respBody)
 	if err != nil {
 		return nil, err
 	}
-	if respBody.Error != nil {
-		return nil, respBody.Error.Error()
-	}
-	return respBody.Result, nil
+	return respBody.ToResponse(), nil
 }
 
 func (proto *JSONRPCProtocol) getBody(r *protocol.Request) ([]byte, error) {
@@ -69,17 +66,17 @@ func (proto *JSONRPCProtocol) getBody(r *protocol.Request) ([]byte, error) {
 	return proto.serial.Encode(body)
 }
 
-func (proto *JSONRPCProtocol) ReceiveRequest() (protocol.ResponseWriter, *protocol.Request) {
+func (proto *JSONRPCProtocol) Receive() (protocol.ResponseWriter, *protocol.Request, error) {
 	b := <-proto.trans.Receive()
 	body := RequestBody{}
 	err := proto.serial.Decode(b.Body.([]byte), &body)
 	if err != nil {
-		return nil, nil
+		return nil, nil, err
 	}
 	rw := &JSONRPCResponseWriter{
 		b.Resp,
 		proto,
 		header.Header{},
 	}
-	return rw, body.ToRequest()
+	return rw, body.ToRequest(), nil
 }

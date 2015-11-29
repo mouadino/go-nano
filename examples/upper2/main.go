@@ -13,10 +13,10 @@ import (
 func Upper(rw protocol.ResponseWriter, req *protocol.Request) {
 	text, ok := req.Params["_0"]
 	if !ok {
-		rw.WriteError(errors.New("Not ok"))
+		rw.SetError(errors.New("Not ok"))
 		return
 	}
-	rw.Write(strings.ToUpper(text.(string)))
+	rw.Set(strings.ToUpper(text.(string)))
 }
 
 func main() {

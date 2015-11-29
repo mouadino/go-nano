@@ -8,3 +8,12 @@ var (
 	InternalError = errors.New("Internal error")
 	ServerError   = errors.New("Server error")
 )
+
+type RemoteError struct {
+	msg      string
+	endpoint string
+}
+
+func (e *RemoteError) Error() string {
+	return e.msg
+}
