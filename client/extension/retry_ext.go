@@ -15,7 +15,7 @@ import (
 var RetryExceeded = errors.New("retry attempts exceeded")
 
 type retryExt struct {
-	sender   protocol.Sender
+	next     protocol.Sender
 	maxTries int
 	backoff  backoff.BackOff
 }
@@ -25,9 +25,9 @@ type retryExt struct {
 // This extension assuming nothing about whether service is idempotent
 // or not, only request that are not sent are retried.
 func NewRetryExt(maxTries int, backoff backoff.BackOff) Extension {
-	return func(s protocol.Sender) protocol.Sender {
+	return func(next protocol.Sender) protocol.Sender {
 		return &retryExt{
-			sender:   s,
+			next:     next,
 			maxTries: maxTries,
 			backoff:  backoff,
 		}
@@ -42,7 +42,7 @@ func (e *retryExt) Send(endpoint string, req *protocol.Request) (*protocol.Respo
 	// TODO: Shared backoff !?
 	e.backoff.Reset()
 	for i := 1; i <= e.maxTries; i++ {
-		resp, err = e.sender.Send(endpoint, req)
+		resp, err = e.next.Send(endpoint, req)
 
 		if err == nil {
 			break

@@ -17,16 +17,16 @@ type reply struct {
 }
 
 type timeoutExt struct {
-	sender  protocol.Sender
+	next    protocol.Sender
 	timeout time.Duration
 }
 
 // NewTimeoutExt returns an extension that wraps a client to timeout
 // a request when this later take more than given duration.
 func NewTimeoutExt(timeout time.Duration) Extension {
-	return func(s protocol.Sender) protocol.Sender {
+	return func(next protocol.Sender) protocol.Sender {
 		return &timeoutExt{
-			sender:  s,
+			next:    next,
 			timeout: timeout,
 		}
 	}
@@ -36,7 +36,7 @@ func (e *timeoutExt) Send(endpoint string, req *protocol.Request) (*protocol.Res
 	res := make(chan reply, 1)
 
 	go func() {
-		resp, err := e.sender.Send(endpoint, req)
+		resp, err := e.next.Send(endpoint, req)
 		res <- reply{resp, err}
 	}()
 

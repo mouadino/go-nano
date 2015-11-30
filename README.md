@@ -18,9 +18,10 @@ Developers should focus on writing the business logic.
 - RPC.
 
 ### Components
-                                        +------------ +     +---------+     +---------+
-                                        | Middlewares | <-> | Handler | <-> | Service |
-                                        +------------ +     +---------+     +---------+
+
+                                        +------------ +     +---------+
+                                        | Middlewares | <-> | Handler |
+                                        +------------ +     +---------+
     +-----------+     +----------+
     | Transport | <-> | Protocol | <->
     +-----------+     +----------+
@@ -33,30 +34,31 @@ Developers should focus on writing the business logic.
 
 Transports:
 
-- [ ] AMQP Transport
-- [ ] ZeroMQ Transport
+- [X] AMQP Transport (Minimal)
+- [ ] HTTP2 Transport
 - [X] HTTP Transport
 
 Protocols:
 
 - [X] JSON-RPC Protocol (Minimal)
 - [ ] ProtocolBuffer
-- [ ] Lymph Protocol
+- [X] Lymph Protocol (https://github.com/mouadino/go-lymph)
 
 Client:
 
 - [X] Client
 - [X] Command line
-- [ ] Circuit Breaker
+- [X] Circuit Breaker
 - [X] Timeout
-- [ ] Retry
+- [X] Retry
 - [ ] Remote errors
 - [ ] Async
 
 Misc:
 
 - [ ] Configuration
-- [X] Middlewares (Tracing, Rate limit ...)
+- [X] Tracing middleware
+- [ ] Rate limit middleware
 - [ ] Logging
 - [ ] Context
 - [ ] Metrics
