@@ -52,7 +52,7 @@ Client:
 - [X] Timeout
 - [X] Retry
 - [ ] Remote errors
-- [ ] Async
+- [X] Async
 
 Misc:
 
