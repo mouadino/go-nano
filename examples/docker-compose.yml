@@ -1,0 +1,19 @@
+zookeeper:
+   image: jplock/zookeeper
+
+rabbitmq:
+   image: rabbitmq:3.4.4
+
+upper:
+   build: upper/
+   links:
+      - zookeeper
+      - rabbitmq
+   command: /go/bin/app -zookeeper=zookeeper:2181 -rabbitmq=amqp://rabbitmq:5672
+
+demo:
+   build: demo/
+   links:
+      - zookeeper
+      - rabbitmq
+   command: /go/bin/app -zookeeper=zookeeper:2181 -rabbitmq=amqp://rabbitmq:5672
