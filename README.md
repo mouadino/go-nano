@@ -71,7 +71,7 @@ Misc:
 - [ ] Testing tools
 - [ ] Protocol/Transport negotiation
 - [ ] Notification (a.k.a One way message)
-- [ ] Add to travis/circleCI ...
+- [X] Add to travis/circleCI ...
 - [ ] GoDoc
 - [ ] More complete example (e.g. user service)
 
