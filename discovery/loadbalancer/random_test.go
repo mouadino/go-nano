@@ -8,7 +8,7 @@ import (
 )
 
 func TestRandomLoadBalancer(t *testing.T) {
-	lb := RandomLoadBalancer()
+	lb := NewRandom()
 	instances := []discovery.Instance{
 		discovery.Instance{Meta: discovery.ServiceMetadata{"endpoint": "1"}},
 		discovery.Instance{Meta: discovery.ServiceMetadata{"endpoint": "2"}},
@@ -36,7 +36,7 @@ func TestRandomLoadBalancer(t *testing.T) {
 }
 
 func TestNegativeRandomLoadBalancer(t *testing.T) {
-	lb := RandomLoadBalancer()
+	lb := NewRandom()
 	instances := []discovery.Instance{}
 
 	_, err := lb.Endpoint(instances)

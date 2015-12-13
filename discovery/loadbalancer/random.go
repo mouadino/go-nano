@@ -10,7 +10,7 @@ type randomLoadBalancer struct {
 	rand *rand.Rand
 }
 
-func RandomLoadBalancer() *randomLoadBalancer {
+func NewRandom() *randomLoadBalancer {
 	return &randomLoadBalancer{
 		rand: rand.New(rand.NewSource(0)),
 	}
