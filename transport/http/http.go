@@ -9,6 +9,7 @@ import (
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/mouadino/go-nano/transport"
+	"github.com/mouadino/go-nano/utils"
 )
 
 const RPCPath = "/rpc/"
@@ -30,8 +31,11 @@ func New() transport.Transport {
 
 func (trans *HTTPTransport) Listen() error {
 	trans.mux.HandleFunc(RPCPath, trans.handler)
-	// TODO: Get external IP.
-	listner, err := net.Listen("tcp", ":0")
+	ip, err := utils.GetExternalIP()
+	if err != nil {
+		return err
+	}
+	listner, err := net.Listen("tcp", fmt.Sprintf("%s:0", ip))
 	if err != nil {
 		return err
 	}

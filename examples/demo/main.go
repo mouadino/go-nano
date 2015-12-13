@@ -15,18 +15,20 @@ import (
 )
 
 var trans = flag.String("transport", "http", "transport to use e.g. http, amqp")
+var zkHost = flag.String("zookeeper", "127.0.0.1:2181", "Zookeeper location")
+var rmqHost = flag.String("rabbitmq", "amqp://127.0.0.1:5672", "RabbitMQ location")
 
 func main() {
 	flag.Parse()
 
 	var cl client.Client
 	if *trans == "http" {
-		zk := zookeeper.New([]string{"127.0.0.1:2181"})
+		zk := zookeeper.New([]string{*zkHost})
 		lb := loadbalancer.New(zk, loadbalancer.NewRoundRobin())
 
 		cl = client.New("upper", jsonrpc.New(http.New()), lb, extension.NewTimeoutExt(1*time.Second))
 	} else if *trans == "amqp" {
-		cl = client.New("upper", jsonrpc.New(amqp.New("amqp://127.0.0.1:5672"))) //, extension.NewTimeoutExt(2*time.Second))
+		cl = client.New("upper", jsonrpc.New(amqp.New(*rmqHost)), extension.NewTimeoutExt(2*time.Second))
 	} else {
 		panic("unknown transport")
 	}
