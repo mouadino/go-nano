@@ -39,6 +39,8 @@ func (m *handlersMux) Handle(rw protocol.ResponseWriter, req *protocol.Request) 
 		rw.SetError(fmt.Errorf("Unknown handler %q", hdlrName))
 		return
 	}
-	req.Method = parsedMethod[1]
+	if len(parsedMethod) > 1 {
+		req.Method = parsedMethod[1]
+	}
 	hdlr.Handle(rw, req)
 }
