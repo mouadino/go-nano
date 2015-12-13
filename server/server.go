@@ -1,6 +1,5 @@
 /*
-package server define how to serve different handlers with different
-namespaces.
+package server define how to serve RPC services.
 
 Usage:
 
@@ -11,7 +10,7 @@ Usage:
 			rw.Set(strings.ToUpper(text))
 		}
 
-		serv := server.New(jsonrpc.New(http.New())).build()
+		serv := server.New(jsonrpc.New(http.New()))
 		serv.Register("Upper", Upper{})
 
 		_ = serv.Serve()
@@ -41,6 +40,7 @@ type Server struct {
 	metas map[string]map[string]interface{}
 }
 
+// New create a Server.
 func New(proto protocol.Protocol) *Server {
 	return &Server{
 		proto: proto,
@@ -73,6 +73,7 @@ func (s *Server) Serve() {
 	go s.loop()
 }
 
+// ServeAndAnnounce start by serving server than announce it in the given Announcer.
 func (s *Server) ServeAndAnnounce(an discovery.Announcer) error {
 	s.Serve()
 	return s.announce(an)
@@ -110,6 +111,7 @@ func (s *Server) loop() {
 	}
 }
 
+// Wait until user type CTRL-C.
 func Wait() {
 	term := make(chan os.Signal)
 	signal.Notify(term, os.Interrupt, syscall.SIGTERM)

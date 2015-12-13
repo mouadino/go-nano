@@ -18,9 +18,8 @@ With discovery:
 
     zk := zookeeper.New("127.0.0.1:2181")
 		lb := loadbalancer.New(zk, loadbalancer.NewRoundRobin())
-
     c := client.New("upper", jsonrpc.New(http.New()), lb)
-		reply, err := ct.Call("Upper", "foo")
+		reply, err := c.Call("Upper", "foo")
 		fmt.Println(reply)
 
 */
