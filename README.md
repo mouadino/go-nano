@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/mouadino/go-nano.svg?branch=master)](https://travis-ci.org/mouadino/go-nano)
+
+
 # go-nano
 
 A framework for writting web services in Go.
