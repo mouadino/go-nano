@@ -56,10 +56,10 @@ Client:
 
 Server:
 
-- [ ] Multiple services namespaces (a la net/rpc)
+- [X] Multiple services namespaces (a la net/rpc)
 - [X] Tracing middleware
 - [ ] Rate limit middleware
-- [ ] Registration
+- [X] Registration
 
 Misc:
 
