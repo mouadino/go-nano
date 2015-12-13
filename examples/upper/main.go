@@ -3,53 +3,36 @@ package main
 import (
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
-
-	nano "github.com/mouadino/go-nano"
-	"github.com/mouadino/go-nano/handler"
+	"github.com/mouadino/go-nano/discovery/zookeeper"
 	"github.com/mouadino/go-nano/handler/middleware"
 	"github.com/mouadino/go-nano/protocol/jsonrpc"
-	"github.com/mouadino/go-nano/serializer"
-	"github.com/mouadino/go-nano/transport"
+	"github.com/mouadino/go-nano/server"
+	"github.com/mouadino/go-nano/transport/amqp"
+	"github.com/mouadino/go-nano/transport/http"
 )
 
-type echoService struct{}
+type upperService struct{}
 
-func (echoService) NanoStart() error {
-	log.Debug("Starting ...")
-	return nil
-}
-
-func (echoService) NanoStop() error {
-	log.Debug("Stopping ...")
-	return nil
-}
-
-func (echoService) Upper(s string) string {
+func (upperService) Upper(s string) string {
 	return strings.ToUpper(s)
 }
 
 func main() {
-	/*zkAnnouncer := discovery.DefaultZooKeeperAnnounceResolver(
+	zkAnnouncer := zookeeper.New(
 		[]string{"127.0.0.1:2181"},
 	)
-	server := nano.DefaultServer(echoService{})
-	server.Announce("upper", discovery.ServiceMetadata{}, zkAnnouncer)
-	if err := server.ListenAndServe(); err != nil {
-		panic(err)
-	}*/
 
-	amqpTrans := transport.NewAMQPTransport("amqp://127.0.0.1:5672")
-	server := nano.CustomServer(
-		handler.Reflect(echoService{}),
-		amqpTrans,
-		jsonrpc.NewJSONRPCProtocol(amqpTrans, serializer.JSONSerializer{}),
-		middleware.NewRecoverMiddleware(log.New(), true, 8*1024),
-		middleware.NewTraceMiddleware(),
-		middleware.NewLoggerMiddleware(log.New()),
-	)
+	serv := server.New(jsonrpc.New(http.New()))
+	serv.Register("upper", upperService{}, middleware.Defaults...)
 
-	if err := server.ListenAndServe(); err != nil {
+	if err := serv.ServeAndAnnounce(zkAnnouncer); err != nil {
 		panic(err)
 	}
+
+	serv = server.New(jsonrpc.New(amqp.New("amqp://127.0.0.1:5672")))
+	serv.Register("upper", upperService{}, middleware.Defaults...)
+
+	serv.Serve()
+
+	server.Wait()
 }

@@ -10,21 +10,21 @@ import (
 
 var NoEndpointError = errors.New("No Endpoint")
 
-type LoadBalancer interface {
+type LoadBalancerStrategy interface {
 	Endpoint([]discovery.Instance) (string, error)
 }
 
 type loadBalanderExtension struct {
 	sender   protocol.Sender
-	lb       LoadBalancer
+	strategy LoadBalancerStrategy
 	resolver discovery.Resolver
 }
 
-func NewLoadBalancerExtension(resolver discovery.Resolver, lb LoadBalancer) extension.Extension {
+func New(resolver discovery.Resolver, strategy LoadBalancerStrategy) extension.Extension {
 	return func(s protocol.Sender) protocol.Sender {
 		return &loadBalanderExtension{
 			sender:   s,
-			lb:       lb,
+			strategy: strategy,
 			resolver: resolver,
 		}
 	}
@@ -43,6 +43,6 @@ func (lb *loadBalanderExtension) Send(endpoint string, req *protocol.Request) (*
 }
 
 func (lb *loadBalanderExtension) getEndpoint(instances []discovery.Instance) (string, error) {
-	endpoint, err := lb.lb.Endpoint(instances)
+	endpoint, err := lb.strategy.Endpoint(instances)
 	return endpoint, err
 }

@@ -1,61 +1,43 @@
-package transport
+package amqp
 
 import (
+	"io"
+	"io/ioutil"
 	"os"
 	"path"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/mouadino/go-nano/transport"
 	"github.com/pborman/uuid"
 	"github.com/streadway/amqp"
 )
-
-const defaultExchange = "nano"
-
-type AMQPResponseWriter struct {
-	trans    *AMQPTransport
-	delivery amqp.Delivery
-}
-
-func NewAMQPResponseWriter(trans *AMQPTransport, delivery amqp.Delivery) ResponseWriter {
-	return &AMQPResponseWriter{
-		trans:    trans,
-		delivery: delivery,
-	}
-}
-
-func (rw *AMQPResponseWriter) Write(data interface{}) error {
-	err := rw.trans.sendReply(rw.delivery.ReplyTo, rw.delivery.CorrelationId, data.([]byte))
-	if err != nil {
-		return err
-	}
-	rw.delivery.Ack(false)
-	return nil
-}
 
 type AMQPTransport struct {
 	url             string
 	exchange        string
 	conn            *amqp.Connection
-	reqs            chan Request
+	reqs            chan transport.Request
 	listenQueue     string
 	logger          *log.Logger
 	pendingRequests map[string]chan []byte
 	listening       bool
 }
 
-func NewAMQPTransport(url string) Transport {
-	return NewCustomAMQPTransport(url, defaultExchange, path.Base(os.Args[0]))
-}
-
-func NewCustomAMQPTransport(url, exchange, listenQueue string) Transport {
-	return &AMQPTransport{
+// TODO: Add options.
+func New(url string, options ...func(*AMQPTransport)) transport.Transport {
+	t := &AMQPTransport{
 		url:             url,
-		exchange:        exchange, // TODO: Is this used ?
+		exchange:        "nano", // TODO: Is this used ?
 		logger:          log.New(),
-		listenQueue:     listenQueue, // FIXME: Should be unique per service.
-		reqs:            make(chan Request),
+		listenQueue:     path.Base(os.Args[0]), // FIXME: Should be unique per service.
+		reqs:            make(chan transport.Request),
 		pendingRequests: make(map[string]chan []byte),
 	}
+
+	for _, opt := range options {
+		opt(t)
+	}
+	return t
 }
 
 func (trans *AMQPTransport) Listen() error {
@@ -63,7 +45,7 @@ func (trans *AMQPTransport) Listen() error {
 	if err != nil {
 		return err
 	}
-	trans.logger.Info("Listening on ", trans.url, trans.listenQueue)
+	trans.logger.Info("Listening on ", trans.url, " ", trans.listenQueue)
 	go trans.consumeMessages()
 	trans.listening = true
 	return nil
@@ -93,11 +75,18 @@ func (trans *AMQPTransport) consumeMessages() {
 		for msg := range msgs {
 			if msg.ReplyTo == "" {
 				trans.logger.Debug("Reply received for ", msg.CorrelationId)
-				// TODO: May fail.
-				trans.pendingRequests[msg.CorrelationId] <- msg.Body
+				replyCh, ok := trans.pendingRequests[msg.CorrelationId]
+				if ok {
+					replyCh <- msg.Body
+				} else {
+					trans.logger.Error("no request waiting for %s", msg)
+				}
+				msg.Ack(true)
+				// TODO: Remove trans.pendingRequests.
+				// TODO: Mutex.
 			} else {
 				trans.logger.Debug("New request received")
-				trans.reqs <- Request{
+				trans.reqs <- transport.Request{
 					Body: msg.Body,
 					Resp: NewAMQPResponseWriter(trans, msg),
 				}
@@ -106,11 +95,11 @@ func (trans *AMQPTransport) consumeMessages() {
 	}
 }
 
-func (trans *AMQPTransport) Receive() <-chan Request {
+func (trans *AMQPTransport) Receive() <-chan transport.Request {
 	return trans.reqs
 }
 
-func (trans *AMQPTransport) Send(endpoint string, message []byte) ([]byte, error) {
+func (trans *AMQPTransport) Send(endpoint string, message io.Reader) ([]byte, error) {
 	if !trans.listening {
 		err := trans.Listen()
 		if err != nil {
@@ -129,17 +118,21 @@ func (trans *AMQPTransport) Send(endpoint string, message []byte) ([]byte, error
 	return body, nil
 }
 
-func (trans *AMQPTransport) sendRequest(routingKey string, message []byte) (string, error) {
+func (trans *AMQPTransport) sendRequest(routingKey string, message io.Reader) (string, error) {
 	correlationID := uuid.New()
+	body, err := ioutil.ReadAll(message)
+	if err != nil {
+		return "", err
+	}
 	// TODO: Expire time ?
 	msg := amqp.Publishing{
 		ContentType:   "text/plain",
-		Body:          message,
+		Body:          body,
 		CorrelationId: correlationID,
 		ReplyTo:       trans.listenQueue,
 	}
 	trans.logger.Debug("Send request")
-	err := trans.publishMessage(routingKey, msg, false)
+	err = trans.publishMessage(routingKey, msg, false)
 	if err != nil {
 		return "", err
 	}

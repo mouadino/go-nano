@@ -10,7 +10,7 @@ type roundRobinLoadBalancer struct {
 	mod uint64
 }
 
-func RoundRobinLoadBalancer() *roundRobinLoadBalancer {
+func NewRoundRobin() *roundRobinLoadBalancer {
 	return &roundRobinLoadBalancer{0}
 }
 

@@ -1,4 +1,4 @@
-package discovery
+package zookeeper
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/mouadino/go-nano/discovery"
 	"github.com/mouadino/go-nano/serializer"
 
 	"github.com/samuel/go-zookeeper/zk"
@@ -21,29 +22,48 @@ type zookeeperAnnounceResolver struct {
 	perms     int32
 }
 
-func DefaultZooKeeperAnnounceResolver(endpoints []string) AnnounceResolver {
-	return CustomZooKeeperAnnounceResolver(
-		endpoints,
-		"nano-services",
-		3*time.Second,
-		zk.PermAll,
-		serializer.JSONSerializer{},
-	)
-}
-
-func CustomZooKeeperAnnounceResolver(endpoints []string, chroot string, timeout time.Duration, perms int32, serial serializer.Serializer) AnnounceResolver {
-	return &zookeeperAnnounceResolver{
-		logger:    log.New(), // TODO: Pass logger (Namespacing ?)
-		endpoints: endpoints,
-		timeout:   timeout,
-		chroot:    chroot,
-		serial:    serial,
-		perms:     perms,
+func Timeout(timeout time.Duration) func(z *zookeeperAnnounceResolver) {
+	return func(z *zookeeperAnnounceResolver) {
+		z.timeout = timeout
 	}
 }
 
+func Chroot(chroot string) func(z *zookeeperAnnounceResolver) {
+	return func(z *zookeeperAnnounceResolver) {
+		z.chroot = chroot
+	}
+}
+
+func Perms(perms int32) func(z *zookeeperAnnounceResolver) {
+	return func(z *zookeeperAnnounceResolver) {
+		z.perms = perms
+	}
+}
+
+func Serializer(serial serializer.Serializer) func(z *zookeeperAnnounceResolver) {
+	return func(z *zookeeperAnnounceResolver) {
+		z.serial = serial
+	}
+}
+
+func New(endpoints []string, options ...func(z *zookeeperAnnounceResolver)) discovery.AnnounceResolver {
+	z := &zookeeperAnnounceResolver{
+		endpoints: endpoints,
+		logger:    log.New(),
+		chroot:    "nano-services",
+		timeout:   3 * time.Second,
+		perms:     zk.PermAll,
+		serial:    serializer.JSONSerializer{},
+	}
+
+	for _, opt := range options {
+		opt(z)
+	}
+	return z
+}
+
 // TODO: Cache result.
-func (z *zookeeperAnnounceResolver) Resolve(name string) (*Service, error) {
+func (z *zookeeperAnnounceResolver) Resolve(name string) (*discovery.Service, error) {
 	err := z.ensureConn()
 	if err != nil {
 		return nil, err
@@ -54,7 +74,7 @@ func (z *zookeeperAnnounceResolver) Resolve(name string) (*Service, error) {
 		return nil, err
 	}
 
-	instances := []Instance{}
+	instances := []discovery.Instance{}
 	for _, id := range children {
 		// TODO: Watch events and change Instances dynamically.
 		data, _, err := z.conn.Get(z.getPath(name, id))
@@ -62,25 +82,25 @@ func (z *zookeeperAnnounceResolver) Resolve(name string) (*Service, error) {
 			z.logger.Error("zookeeper get failed", err)
 			continue
 		}
-		var meta ServiceMetadata
+		var meta discovery.ServiceMetadata
 		err = z.serial.Decode(data, &meta)
 		if err != nil {
 			z.logger.Error("zookeeper metadata parse failed", err)
 			continue
 		}
-		instances = append(instances, Instance{
+		instances = append(instances, discovery.Instance{
 			ID:   id,
 			Meta: meta,
 		})
 	}
-	service := &Service{
+	service := &discovery.Service{
 		Name:      name,
 		Instances: instances,
 	}
 	return service, nil
 }
 
-func (z *zookeeperAnnounceResolver) Announce(name string, instance Instance) error {
+func (z *zookeeperAnnounceResolver) Announce(name string, instance discovery.Instance) error {
 	err := z.ensureConn()
 	if err != nil {
 		return err

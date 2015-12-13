@@ -81,7 +81,6 @@ func (h *MethodHandler) Handle(resp protocol.ResponseWriter, req *protocol.Reque
 }
 
 func (h *MethodHandler) parseParams(req *protocol.Request) (Params, error) {
-	fmt.Println(req.Params)
 	params := make(Params, len(req.Params)+1)
 	params[0] = reflect.ValueOf(h.svc)
 	for i := 0; ; i++ {
@@ -94,7 +93,6 @@ func (h *MethodHandler) parseParams(req *protocol.Request) (Params, error) {
 	if h.method.Type.NumIn() != len(params) {
 		return params, protocol.ParamsError
 	}
-	fmt.Println(params)
 	return params, nil
 }
 

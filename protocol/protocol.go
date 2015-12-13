@@ -1,6 +1,9 @@
 package protocol
 
-import "github.com/mouadino/go-nano/header"
+import (
+	"github.com/mouadino/go-nano/header"
+	"github.com/mouadino/go-nano/transport"
+)
 
 type Sender interface {
 	Send(string, *Request) (*Response, error)
@@ -13,6 +16,7 @@ type Receiver interface {
 type Protocol interface {
 	Sender
 	Receiver
+	Transport() transport.Transport
 }
 
 type Params map[string]interface{}

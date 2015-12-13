@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/mouadino/go-nano/protocol"
+	"github.com/mouadino/go-nano/protocol/dummy"
 	"github.com/mouadino/go-nano/utils"
 )
 
@@ -31,7 +32,7 @@ func TestHandling(t *testing.T) {
 		Method: "echo",
 		Params: utils.ParamsFormat("foobar"),
 	}
-	resp := &protocol.DumpResponseWriter{}
+	resp := &dummy.ResponseWriter{}
 
 	handler.Handle(resp, &req)
 
@@ -51,7 +52,7 @@ func TestUnknownMethod(t *testing.T) {
 		Method: "blabla",
 		Params: utils.ParamsFormat("foobar"),
 	}
-	resp := &protocol.DumpResponseWriter{}
+	resp := &dummy.ResponseWriter{}
 
 	handler.Handle(resp, &req)
 
@@ -66,7 +67,7 @@ func TestWrongArgumentsMethod(t *testing.T) {
 		Method: "echo",
 		Params: utils.ParamsFormat("foobar", 1),
 	}
-	resp := &protocol.DumpResponseWriter{}
+	resp := &dummy.ResponseWriter{}
 
 	handler.Handle(resp, &req)
 

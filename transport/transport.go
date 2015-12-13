@@ -1,22 +1,19 @@
 package transport
 
-// TODO: Start/Stop
-// TODO: Client side listen ?
+import "io"
+
 type Transport interface {
 	Listen() error
 	Receive() <-chan Request
-	// []byte -> io.Reader ?
-	Send(string, []byte) ([]byte, error)
+	Send(string, io.Reader) ([]byte, error)
 }
 
-// TODO: Addresser ?
-type Listener interface {
+type Addresser interface {
 	Addr() string
 }
 
 type ResponseWriter interface {
 	Write(interface{}) error
-	// TODO: Write should be only called once !?
 }
 
 type Request struct {

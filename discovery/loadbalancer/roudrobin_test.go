@@ -8,7 +8,7 @@ import (
 )
 
 func TestRoundRobinLoadBalancer(t *testing.T) {
-	lb := RoundRobinLoadBalancer()
+	lb := NewRoundRobin()
 	instances := []discovery.Instance{
 		discovery.Instance{Meta: discovery.ServiceMetadata{"endpoint": "1"}},
 		discovery.Instance{Meta: discovery.ServiceMetadata{"endpoint": "2"}},
@@ -27,8 +27,8 @@ func TestRoundRobinLoadBalancer(t *testing.T) {
 }
 
 func TestConcurrentRoundRobinLoadBalancer(t *testing.T) {
+	lb := NewRoundRobin()
 	t.Skip("FIXME: not stable")
-	lb := RoundRobinLoadBalancer()
 	instances := []discovery.Instance{
 		discovery.Instance{Meta: discovery.ServiceMetadata{"endpoint": "1"}},
 		discovery.Instance{Meta: discovery.ServiceMetadata{"endpoint": "2"}},
@@ -68,7 +68,7 @@ func TestConcurrentRoundRobinLoadBalancer(t *testing.T) {
 }
 
 func TestNegativeRoundRobinLoadBalancer(t *testing.T) {
-	lb := RoundRobinLoadBalancer()
+	lb := NewRoundRobin()
 	instances := []discovery.Instance{}
 
 	_, err := lb.Endpoint(instances)

@@ -1,6 +1,8 @@
 package jsonrpc
 
 import (
+	"bytes"
+
 	"github.com/mouadino/go-nano/header"
 	"github.com/mouadino/go-nano/protocol"
 	"github.com/mouadino/go-nano/serializer"
@@ -28,11 +30,26 @@ type JSONRPCProtocol struct {
 	serial serializer.Serializer
 }
 
-func NewJSONRPCProtocol(trans transport.Transport, serial serializer.Serializer) *JSONRPCProtocol {
-	return &JSONRPCProtocol{
-		trans:  trans,
-		serial: serial,
+func Serializer(serial serializer.Serializer) func(*JSONRPCProtocol) {
+	return func(p *JSONRPCProtocol) {
+		p.serial = serial
 	}
+}
+
+func New(trans transport.Transport, options ...func(*JSONRPCProtocol)) *JSONRPCProtocol {
+	proto := &JSONRPCProtocol{
+		trans:  trans,
+		serial: serializer.JSONSerializer{},
+	}
+
+	for _, opt := range options {
+		opt(proto)
+	}
+	return proto
+}
+
+func (proto *JSONRPCProtocol) Transport() transport.Transport {
+	return proto.trans
 }
 
 func (proto *JSONRPCProtocol) Send(endpoint string, r *protocol.Request) (*protocol.Response, error) {
@@ -44,7 +61,7 @@ func (proto *JSONRPCProtocol) Send(endpoint string, r *protocol.Request) (*proto
 	if err != nil {
 		return nil, err
 	}
-	b, err := proto.trans.Send(endpoint, reqBody)
+	b, err := proto.trans.Send(endpoint, bytes.NewReader(reqBody))
 	if err != nil {
 		return nil, err
 	}

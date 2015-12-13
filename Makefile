@@ -13,7 +13,6 @@ build:
 
 examples:
 		go build -v -o _build/upper ./examples/upper
-		go build -v -o _build/upper2 ./examples/upper2
 		go build -v -o _build/demo ./examples/demo
 
 doc:

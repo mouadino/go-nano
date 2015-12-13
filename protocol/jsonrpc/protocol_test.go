@@ -6,8 +6,7 @@ import (
 
 	"github.com/mouadino/go-nano/header"
 	"github.com/mouadino/go-nano/protocol"
-	"github.com/mouadino/go-nano/serializer"
-	"github.com/mouadino/go-nano/transport"
+	"github.com/mouadino/go-nano/transport/memory"
 )
 
 var (
@@ -17,10 +16,10 @@ var (
 )
 
 func TestReceiveRequest(t *testing.T) {
-	trans := transport.NewInMemoryTransport(
+	trans := memory.New(
 		[][]byte{dummyRequest}, [][]byte{dummyResponse},
 	)
-	proto := NewJSONRPCProtocol(trans, serializer.JSONSerializer{})
+	proto := New(trans)
 
 	_, req, _ := proto.Receive()
 
@@ -35,10 +34,10 @@ func TestReceiveRequest(t *testing.T) {
 }
 
 func TestSendRequest(t *testing.T) {
-	trans := transport.NewInMemoryTransport(
+	trans := memory.New(
 		[][]byte{dummyRequest}, [][]byte{dummyResponse},
 	)
-	proto := NewJSONRPCProtocol(trans, serializer.JSONSerializer{})
+	proto := New(trans)
 
 	req := protocol.Request{
 		"upper",
@@ -57,10 +56,10 @@ func TestSendRequest(t *testing.T) {
 }
 
 func TestSendRequestWithError(t *testing.T) {
-	trans := transport.NewInMemoryTransport(
+	trans := memory.New(
 		[][]byte{dummyRequest}, [][]byte{dummyResponseWithError},
 	)
-	proto := NewJSONRPCProtocol(trans, serializer.JSONSerializer{})
+	proto := New(trans)
 
 	req := protocol.Request{
 		"upper",

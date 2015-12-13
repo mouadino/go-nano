@@ -47,24 +47,27 @@ Protocols:
 Client:
 
 - [X] Client
-- [X] Command line
+- [ ] Command line
 - [X] Circuit Breaker
 - [X] Timeout
 - [X] Retry
 - [ ] Remote errors
 - [X] Async
 
+Server:
+
+- [ ] Multiple services namespaces (a la net/rpc)
+- [X] Tracing middleware
+- [ ] Rate limit middleware
+- [ ] Registration
+
 Misc:
 
 - [ ] Configuration
-- [X] Tracing middleware
-- [ ] Rate limit middleware
 - [ ] Logging
 - [ ] Context
 - [ ] Metrics
-- [ ] Multiple services namespaces (a la net/rpc)
 - [X] Discovery
-- [ ] Messages
 - [ ] Testing tools
 - [ ] Protocol/Transport negotiation
 - [ ] Notification (a.k.a One way message)

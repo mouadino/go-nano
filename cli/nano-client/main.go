@@ -26,7 +26,7 @@ func main() {
 			Usage: "Parameters as JSON (Required)",
 		},
 	}
-	app.Action = SendRequest
+	//app.Action = SendRequest
 
 	app.Run(os.Args)
 }

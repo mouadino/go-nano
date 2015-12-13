@@ -1,27 +1,42 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"time"
 
 	"github.com/mouadino/go-nano/client"
+	"github.com/mouadino/go-nano/client/extension"
+	"github.com/mouadino/go-nano/discovery/loadbalancer"
+	"github.com/mouadino/go-nano/discovery/zookeeper"
+	"github.com/mouadino/go-nano/protocol/jsonrpc"
+	"github.com/mouadino/go-nano/transport/amqp"
+	"github.com/mouadino/go-nano/transport/http"
 )
 
-var echo = client.DefaultClient("jsonrpc+amqp://127.0.0.1:5672/upper")
-
-/*var amqpTrans = transport.NewAMQPTransport("amqp://127.0.0.1:5672")
-var echo = client.CustomClient(
-	"upper",
-	jsonrpc.NewJSONRPCProtocol(amqpTrans, serializer.JSONSerializer{}),
-	extension.NewTimeoutExt(3*time.Second),
-)*/
+var trans = flag.String("transport", "http", "transport to use e.g. http, amqp")
 
 func main() {
+	flag.Parse()
+
+	var cl client.Client
+	if *trans == "http" {
+		zk := zookeeper.New([]string{"127.0.0.1:2181"})
+		lb := loadbalancer.New(zk, loadbalancer.NewRoundRobin())
+
+		cl = client.New("upper", jsonrpc.New(http.New()), lb, extension.NewTimeoutExt(1*time.Second))
+	} else if *trans == "amqp" {
+		cl = client.New("upper", jsonrpc.New(amqp.New("amqp://127.0.0.1:5672"))) //, extension.NewTimeoutExt(2*time.Second))
+	} else {
+		panic("unknown transport")
+	}
+
 	c := time.Tick(1 * time.Second)
 	i := 0
 	for _ = range c {
 		text := fmt.Sprintf("foo_%d", i)
-		result, err := echo.Call("upper", text)
+		result, err := cl.Call("upper.upper", text)
+
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
 		} else {

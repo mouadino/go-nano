@@ -5,6 +5,7 @@ import (
 
 	"github.com/mouadino/go-nano/header"
 	"github.com/mouadino/go-nano/protocol"
+	"github.com/mouadino/go-nano/protocol/dummy"
 	"github.com/pborman/uuid"
 )
 
@@ -14,7 +15,7 @@ func TestTraceMiddlewareGeneration(t *testing.T) {
 		Params: protocol.Params{},
 		Header: header.Header{},
 	}
-	rw := &protocol.DumpResponseWriter{
+	rw := &dummy.ResponseWriter{
 		HeaderValues: header.Header{},
 	}
 
@@ -38,7 +39,7 @@ func TestTraceMiddlewareDelegation(t *testing.T) {
 			TraceHeader: traceID,
 		},
 	}
-	rw := &protocol.DumpResponseWriter{
+	rw := &dummy.ResponseWriter{
 		HeaderValues: header.Header{},
 	}
 

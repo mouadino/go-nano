@@ -9,6 +9,7 @@ import (
 	"github.com/mouadino/go-nano/handler"
 	"github.com/mouadino/go-nano/header"
 	"github.com/mouadino/go-nano/protocol"
+	"github.com/mouadino/go-nano/protocol/dummy"
 )
 
 var panicHandler = handler.HandlerFunc(func(rw protocol.ResponseWriter, req *protocol.Request) {
@@ -21,7 +22,7 @@ func TestRecoverMiddleware(t *testing.T) {
 		Params: protocol.Params{},
 		Header: header.Header{},
 	}
-	rw := &protocol.DumpResponseWriter{
+	rw := &dummy.ResponseWriter{
 		HeaderValues: header.Header{},
 	}
 
