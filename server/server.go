@@ -86,8 +86,7 @@ func (s *Server) announce(an discovery.Announcer) error {
 	}
 
 	for _, name := range s.mux.Names() {
-		meta := discovery.NewServiceMetadata(addr.Addr(), s.metas[name])
-		instance := discovery.NewInstance(meta)
+		instance := discovery.NewInstance(addr.Addr(), s.metas[name])
 		err := an.Announce(name, instance)
 		if err != nil {
 			return err

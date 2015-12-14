@@ -29,32 +29,19 @@ func (s *Service) String() string {
 }
 
 type Instance struct {
-	ID   string
-	Meta ServiceMetadata
+	ID       string
+	Endpoint string
+	Meta     InstanceMeta
 }
 
-func NewInstance(meta ServiceMetadata) Instance {
-	instance := Instance{ID: uuid.New(), Meta: meta}
-	return instance
-}
-
-func (inst *Instance) String() string {
-	return fmt.Sprintf("%s", inst.ID)
-}
-
-type ServiceMetadata map[string]interface{}
-
-func NewServiceMetadata(endpoint string, meta map[string]interface{}) ServiceMetadata {
-	res := ServiceMetadata{"endpoint": endpoint}
-	for k, v := range meta {
-		if k == "endpoint" {
-			continue // TODO: Return error ?
-		}
-		res[k] = v
+func NewInstance(endpoint string, meta InstanceMeta) Instance {
+	// FIXME: How about if meta have "endpoint" ?
+	meta["endpoint"] = endpoint
+	return Instance{
+		ID:       uuid.New(),
+		Endpoint: endpoint,
+		Meta:     meta,
 	}
-	return res
 }
 
-func (m ServiceMetadata) Endpoint() string {
-	return m["endpoint"].(string)
-}
+type InstanceMeta map[string]interface{}
