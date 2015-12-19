@@ -82,15 +82,16 @@ func (z *zookeeperAnnounceResolver) Resolve(name string) (*discovery.Service, er
 			z.logger.Error("zookeeper get failed", err)
 			continue
 		}
-		var meta discovery.ServiceMetadata
+		var meta discovery.InstanceMeta
 		err = z.serial.Decode(data, &meta)
 		if err != nil {
 			z.logger.Error("zookeeper metadata parse failed", err)
 			continue
 		}
 		instances = append(instances, discovery.Instance{
-			ID:   id,
-			Meta: meta,
+			ID:       id,
+			Endpoint: meta["endpoint"].(string),
+			Meta:     meta,
 		})
 	}
 	service := &discovery.Service{

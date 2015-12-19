@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/mouadino/go-nano.svg?branch=master)](https://travis-ci.org/mouadino/go-nano)
 [![Coverage Status](https://coveralls.io/repos/mouadino/go-nano/badge.svg?branch=master&service=github)](https://coveralls.io/github/mouadino/go-nano?branch=master)
+[![GoDoc](https://godoc.org/github.com/mouadino/go-nano?status.svg)](https://godoc.org/github.com/mouadino/go-nano)
 
 # go-nano
 

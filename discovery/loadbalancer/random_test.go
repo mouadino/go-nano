@@ -10,9 +10,9 @@ import (
 func TestRandomLoadBalancer(t *testing.T) {
 	lb := NewRandom()
 	instances := []discovery.Instance{
-		discovery.Instance{Meta: discovery.ServiceMetadata{"endpoint": "1"}},
-		discovery.Instance{Meta: discovery.ServiceMetadata{"endpoint": "2"}},
-		discovery.Instance{Meta: discovery.ServiceMetadata{"endpoint": "3"}},
+		discovery.Instance{Endpoint: "1"},
+		discovery.Instance{Endpoint: "2"},
+		discovery.Instance{Endpoint: "3"},
 	}
 
 	iterations := 100000

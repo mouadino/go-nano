@@ -4,9 +4,14 @@ go:
     - 1.4.2
     - 1.5
     - tip
+
 before_install:
   - go get github.com/mattn/goveralls
   - go get github.com/modocache/gover
+  - wget http://apache.claz.org/zookeeper/zookeeper-3.3.6/zookeeper-3.3.6.tar.gz
+  - tar -zxvf zookeeper-3.3.6.tar.gz
+  - export ZOOKEEPER_PATH=`pwd`/zookeeper-3.3.6
+
 script:
     - ./coverage.bash
     - $HOME/gopath/bin/goveralls -coverprofile gover.coverprofile -service=travis-ci

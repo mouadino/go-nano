@@ -21,5 +21,5 @@ func (lb *randomLoadBalancer) Endpoint(instances []discovery.Instance) (string, 
 		return "", NoEndpointError
 	}
 	instance := instances[lb.rand.Intn(len(instances))]
-	return instance.Meta.Endpoint(), nil
+	return instance.Endpoint, nil
 }

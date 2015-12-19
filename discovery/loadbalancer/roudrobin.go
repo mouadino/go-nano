@@ -26,5 +26,5 @@ func (s *roundRobinLoadBalancer) Endpoint(instances []discovery.Instance) (strin
 			break
 		}
 	}
-	return instance.Meta.Endpoint(), nil
+	return instance.Endpoint, nil
 }
