@@ -10,6 +10,7 @@ type randomLoadBalancer struct {
 	rand *rand.Rand
 }
 
+// NewRandom returns a loadbalancer strategy that choose an endpoint randomly.
 func NewRandom() *randomLoadBalancer {
 	return &randomLoadBalancer{
 		rand: rand.New(rand.NewSource(0)),

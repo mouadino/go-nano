@@ -1,3 +1,8 @@
+/*
+package loadbalancer defines how to balance and distribute requests between multiple
+service instances.
+
+*/
 package loadbalancer
 
 import (
@@ -8,8 +13,11 @@ import (
 	"github.com/mouadino/go-nano/protocol"
 )
 
+// NoEndpointError returned when loadbalancer doesn't find any suitable endpoint.
 var NoEndpointError = errors.New("No Endpoint")
 
+// LoadBalancerStrategy is the interface that define how an endpoint get chosen from
+// available endpoints.
 type LoadBalancerStrategy interface {
 	Endpoint([]discovery.Instance) (string, error)
 }
@@ -20,6 +28,7 @@ type loadBalanderExtension struct {
 	resolver discovery.Resolver
 }
 
+// New returns a client extension that know how to balance requests.
 func New(resolver discovery.Resolver, strategy LoadBalancerStrategy) extension.Extension {
 	return func(s protocol.Sender) protocol.Sender {
 		return &loadBalanderExtension{
@@ -30,6 +39,7 @@ func New(resolver discovery.Resolver, strategy LoadBalancerStrategy) extension.E
 	}
 }
 
+// Send function to implement protocol.Sender interface.
 func (lb *loadBalanderExtension) Send(endpoint string, req *protocol.Request) (*protocol.Response, error) {
 	svc, err := lb.resolver.Resolve(endpoint)
 	if err != nil {

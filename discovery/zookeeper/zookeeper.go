@@ -1,8 +1,13 @@
+/*
+package zookeeper contains definition of discovery logic to announce rpc
+instances in zookeeper and resolve them.
+
+*/
 package zookeeper
 
 import (
-	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -20,32 +25,41 @@ type zookeeperAnnounceResolver struct {
 	chroot    string
 	conn      *zk.Conn
 	perms     int32
+
+	mu    sync.RWMutex
+	cache map[string]*discovery.Service
 }
 
+// Timeout option configure connection timeout to zookeeper, default 3 seconds.
 func Timeout(timeout time.Duration) func(z *zookeeperAnnounceResolver) {
 	return func(z *zookeeperAnnounceResolver) {
 		z.timeout = timeout
 	}
 }
 
+// Chroot option configure zookeeper path chroot, default "nano-services".
 func Chroot(chroot string) func(z *zookeeperAnnounceResolver) {
 	return func(z *zookeeperAnnounceResolver) {
 		z.chroot = chroot
 	}
 }
 
+// Perms option configure zookeeper path permission, default to open for all.
 func Perms(perms int32) func(z *zookeeperAnnounceResolver) {
 	return func(z *zookeeperAnnounceResolver) {
 		z.perms = perms
 	}
 }
 
+// Serializer option configure serializer to use when reading values instance data
+// from zookeeper, default to json serializer.
 func Serializer(serial serializer.Serializer) func(z *zookeeperAnnounceResolver) {
 	return func(z *zookeeperAnnounceResolver) {
 		z.serial = serial
 	}
 }
 
+// New creates a AnnounceResolver for zookeeper.
 func New(endpoints []string, options ...func(z *zookeeperAnnounceResolver)) discovery.AnnounceResolver {
 	z := &zookeeperAnnounceResolver{
 		endpoints: endpoints,
@@ -54,6 +68,7 @@ func New(endpoints []string, options ...func(z *zookeeperAnnounceResolver)) disc
 		timeout:   3 * time.Second,
 		perms:     zk.PermAll,
 		serial:    serializer.JSONSerializer{},
+		cache:     make(map[string]*discovery.Service),
 	}
 
 	for _, opt := range options {
@@ -62,30 +77,47 @@ func New(endpoints []string, options ...func(z *zookeeperAnnounceResolver)) disc
 	return z
 }
 
-// TODO: Cache result.
+// Resolve the given service name to a Service structure.
 func (z *zookeeperAnnounceResolver) Resolve(name string) (*discovery.Service, error) {
 	err := z.ensureConn()
 	if err != nil {
 		return nil, err
 	}
-	children, _, err := z.conn.Children(z.getPath(name))
+	if s, ok := z.cache[name]; ok {
+		return s, nil
+	}
+	s, err := z.resolve(name)
+	if err != nil {
+		z.mu.Lock()
+		z.cache[name] = s
+		z.mu.Unlock()
+	}
+	return s, err
+}
 
+func (z *zookeeperAnnounceResolver) resolve(name string) (*discovery.Service, error) {
+	children, _, events, err := z.conn.ChildrenW(z.getPath(name))
 	if err != nil {
 		return nil, err
 	}
 
+	service := &discovery.Service{
+		Name:      name,
+		Instances: z.getInstances(name, children),
+	}
+
+	go z.watchEvents(events, func(ev zk.Event) {
+		z.onPathChange(ev, service)
+	})
+
+	return service, nil
+}
+
+func (z *zookeeperAnnounceResolver) getInstances(name string, children []string) []discovery.Instance {
 	instances := []discovery.Instance{}
 	for _, id := range children {
-		// TODO: Watch events and change Instances dynamically.
-		data, _, err := z.conn.Get(z.getPath(name, id))
+		meta, err := z.getInstanceData(name, id)
 		if err != nil {
-			z.logger.Error("zookeeper get failed", err)
-			continue
-		}
-		var meta discovery.InstanceMeta
-		err = z.serial.Decode(data, &meta)
-		if err != nil {
-			z.logger.Error("zookeeper metadata parse failed", err)
 			continue
 		}
 		instances = append(instances, discovery.Instance{
@@ -94,13 +126,41 @@ func (z *zookeeperAnnounceResolver) Resolve(name string) (*discovery.Service, er
 			Meta:     meta,
 		})
 	}
-	service := &discovery.Service{
-		Name:      name,
-		Instances: instances,
-	}
-	return service, nil
+	return instances
 }
 
+func (z *zookeeperAnnounceResolver) getInstanceData(name, id string) (discovery.InstanceMeta, error) {
+	data, _, err := z.conn.Get(z.getPath(name, id))
+	if err != nil {
+		z.logger.Errorf("zookeeper get failed for %s: %s", id, err)
+		return nil, err
+	}
+
+	var meta discovery.InstanceMeta
+	err = z.serial.Decode(data, &meta)
+	if err != nil {
+		z.logger.Errorf("zookeeper metadata parse failed for %s: %s", id, err)
+		return nil, err
+	}
+	return meta, nil
+}
+
+func (z *zookeeperAnnounceResolver) onPathChange(ev zk.Event, service *discovery.Service) {
+	z.logger.WithFields(log.Fields{
+		"event": ev.Type,
+		"name":  service.Name,
+		"path":  ev.Path,
+	}).Debug("zookeeper path changed")
+
+	children, _, err := z.conn.Children(z.getPath(service.Name))
+	if err != nil {
+		z.logger.Debug("zookeeper error getting children ", err)
+		return
+	}
+	service.Instances = z.getInstances(service.Name, children)
+}
+
+// Announce instance for discovery in zookeeper under given name.
 func (z *zookeeperAnnounceResolver) Announce(name string, instance discovery.Instance) error {
 	err := z.ensureConn()
 	if err != nil {
@@ -122,17 +182,20 @@ func (z *zookeeperAnnounceResolver) ensureConn() error {
 	if err != nil {
 		return err
 	}
-	go z.watchEvents(events)
+
+	go z.watchEvents(events, func(ev zk.Event) {
+		z.logger.WithFields(log.Fields{
+			"event": ev.Type,
+		}).Debug("zookeeper changed state")
+	})
 	z.conn = conn
 	z.conn.SetLogger(z.logger)
 	return err
 }
 
-func (z *zookeeperAnnounceResolver) watchEvents(events <-chan zk.Event) {
+func (z *zookeeperAnnounceResolver) watchEvents(events <-chan zk.Event, callback func(zk.Event)) {
 	for ev := range events {
-		z.logger.WithFields(log.Fields{
-			"event": ev.Type,
-		}).Debug("zookeeper changed state")
+		callback(ev)
 	}
 }
 
@@ -145,6 +208,7 @@ func (z *zookeeperAnnounceResolver) createNode(path string, data []byte) error {
 	acl := zk.WorldACL(z.perms)
 	flags := int32(0)
 
+	// TODO: Refactor me.
 	keys := strings.Split(path, "/")
 	d := []byte{}
 	var p string
@@ -157,7 +221,6 @@ func (z *zookeeperAnnounceResolver) createNode(path string, data []byte) error {
 			d = data
 			flags = int32(zk.FlagEphemeral)
 		}
-		fmt.Printf("Creating %s %s\n", p, d)
 		_, err := z.conn.Create(p, d, flags, acl)
 		if err != nil && err != zk.ErrNodeExists {
 			return err
