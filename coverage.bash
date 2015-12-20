@@ -21,7 +21,7 @@ PATHS=${1:-$(unique_directories)}
 function report {
   for path in $PATHS
   do
-    go test -coverprofile=$path/cover.coverprofile ./$path
+    go test -coverprofile=$path/cover.coverprofile -tags=integration ./$path
   done
 }
 

@@ -10,6 +10,8 @@ type roundRobinLoadBalancer struct {
 	mod uint64
 }
 
+// NewRoundRobin returns a loadbalancer strategy that choose an endpoint using
+// round-robin algorithm.
 func NewRoundRobin() *roundRobinLoadBalancer {
 	return &roundRobinLoadBalancer{0}
 }

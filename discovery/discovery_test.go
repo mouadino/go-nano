@@ -1,21 +1,16 @@
 package discovery
 
-import (
-	"fmt"
-	"testing"
-)
+import "testing"
 
 func TestService(t *testing.T) {
-	insts := make([]Instance, 0)
-	insts = append(insts, NewInstance("127.0.0.1:8080", InstanceMeta{}))
-	insts = append(insts, NewInstance("127.0.0.1:8081", InstanceMeta{}))
 
 	srv := Service{
-		Name:      "foobar",
-		Instances: insts,
+		Name: "foobar",
+		Instances: []Instance{
+			NewInstance("127.0.0.1:8080", InstanceMeta{}),
+			NewInstance("127.0.0.1:8081", InstanceMeta{}),
+		},
 	}
-
-	fmt.Printf("%s - %s", srv.Instances, insts)
 
 	if srv.String() != "foobar [2]" {
 		t.Errorf("service name want 'foobar [2]', got %s", srv.String())
