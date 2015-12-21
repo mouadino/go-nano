@@ -2,7 +2,7 @@ package middleware
 
 import "github.com/mouadino/go-nano/protocol"
 
-type DumpHandler struct{}
+type dummyHandler struct{}
 
-func (h *DumpHandler) Handle(rw protocol.ResponseWriter, req *protocol.Request) {
+func (h *dummyHandler) Handle(rw protocol.ResponseWriter, req *protocol.Request) {
 }

@@ -1,17 +1,13 @@
+/*
+package middleware contains common handler middlewares, example: logger,
+tracer, recoverer ... .
+
+*/
 package middleware
 
-import (
-	log "github.com/Sirupsen/logrus"
+import "github.com/mouadino/go-nano/handler"
 
-	"github.com/mouadino/go-nano/handler"
-)
-
-var Defaults = []handler.Middleware{
-	NewRecoverMiddleware(log.New(), true, 8*1024),
-	NewTraceMiddleware(),
-	NewLoggerMiddleware(log.New()),
-}
-
+// Chain creates a Handler with the given middlewares stacked in it.
 func Chain(hdlr handler.Handler, middlewares ...handler.Middleware) handler.Handler {
 	for _, m := range middlewares {
 		hdlr = m(hdlr)

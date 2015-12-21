@@ -30,7 +30,7 @@ func TestRecoverMiddleware(t *testing.T) {
 	logger := log.New()
 	logger.Out = buff
 
-	handler := Chain(panicHandler, NewRecoverMiddleware(logger, true, 8*1024))
+	handler := Chain(panicHandler, NewRecover(logger, true, 8*1024))
 
 	handler.Handle(rw, req)
 

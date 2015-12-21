@@ -25,7 +25,7 @@ func TestLoggerMiddleware(t *testing.T) {
 	logger := log.New()
 	logger.Out = buff
 
-	handler := Chain(&DumpHandler{}, NewLoggerMiddleware(logger))
+	handler := Chain(&dummyHandler{}, NewLogger(logger))
 
 	handler.Handle(rw, req)
 

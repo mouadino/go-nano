@@ -4,7 +4,10 @@ import (
 	"flag"
 	"strings"
 
+	log "github.com/Sirupsen/logrus"
+
 	"github.com/mouadino/go-nano/discovery/zookeeper"
+	"github.com/mouadino/go-nano/handler"
 	"github.com/mouadino/go-nano/handler/middleware"
 	"github.com/mouadino/go-nano/protocol/jsonrpc"
 	"github.com/mouadino/go-nano/server"
@@ -14,11 +17,17 @@ import (
 
 var zkHost = flag.String("zookeeper", "127.0.0.1:2181", "Zookeeper location")
 var rmqHost = flag.String("rabbitmq", "amqp://127.0.0.1:5672", "RabbitMQ location")
+var logger = log.New()
+var ms = []handler.Middleware{
+	middleware.NewLogger(logger),
+	middleware.NewRecover(logger, true, 8*1024),
+	middleware.NewTrace(),
+}
 
 type upperService struct{}
 
-func (upperService) Upper(s string) string {
-	return strings.ToUpper(s)
+func (upperService) Upper(s string) (string, error) {
+	return strings.ToUpper(s), nil
 }
 
 func main() {
@@ -29,14 +38,14 @@ func main() {
 	)
 
 	serv := server.New(jsonrpc.New(http.New()))
-	serv.Register("upper", upperService{}, middleware.Defaults...)
+	serv.Register("upper", upperService{}, ms...)
 
 	if err := serv.ServeAndAnnounce(zkAnnouncer); err != nil {
 		panic(err)
 	}
 
 	serv = server.New(jsonrpc.New(amqp.New(*rmqHost)))
-	serv.Register("upper", upperService{}, middleware.Defaults...)
+	serv.Register("upper", upperService{}, ms...)
 
 	serv.Serve()
 
