@@ -19,7 +19,7 @@ func TestTraceMiddlewareGeneration(t *testing.T) {
 		HeaderValues: header.Header{},
 	}
 
-	handler := Chain(&DumpHandler{}, NewTraceMiddleware())
+	handler := Chain(&dummyHandler{}, NewTrace())
 
 	handler.Handle(rw, req)
 
@@ -43,7 +43,7 @@ func TestTraceMiddlewareDelegation(t *testing.T) {
 		HeaderValues: header.Header{},
 	}
 
-	handler := Chain(&DumpHandler{}, NewTraceMiddleware())
+	handler := Chain(&dummyHandler{}, NewTrace())
 
 	handler.Handle(rw, req)
 

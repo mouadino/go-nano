@@ -14,7 +14,8 @@ type loggerMiddleware struct {
 	wrapped handler.Handler
 }
 
-func NewLoggerMiddleware(logger *log.Logger) handler.Middleware {
+// NewLogger returns a middleware that log requests with timing data.
+func NewLogger(logger *log.Logger) handler.Middleware {
 	return func(wrapped handler.Handler) handler.Handler {
 		return &loggerMiddleware{
 			logger:  logger,

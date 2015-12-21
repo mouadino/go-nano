@@ -12,7 +12,9 @@ type traceMiddleware struct {
 	wrapped handler.Handler
 }
 
-func NewTraceMiddleware() handler.Middleware {
+// NewTrace returns a middleware that add a tracing header to
+// responses to be able to correlate requests and responses.
+func NewTrace() handler.Middleware {
 	return func(wrapped handler.Handler) handler.Handler {
 		return &traceMiddleware{
 			wrapped: wrapped,

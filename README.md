@@ -55,7 +55,7 @@ Client:
 - [X] Circuit Breaker
 - [X] Timeout
 - [X] Retry
-- [ ] Remote errors
+- [X] Remote errors
 - [X] Async
 
 Server:

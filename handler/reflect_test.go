@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/mouadino/go-nano/protocol"
@@ -14,20 +15,24 @@ func (s *EchoService) NanoStart() error {
 	return nil
 }
 
-func (s *EchoService) Echo(text string) string {
-	return text
+func (s *EchoService) Echo(text string) (string, error) {
+	return text, nil
+}
+
+func (s *EchoService) Fail(text string) (string, error) {
+	return "", errors.New("Fail!")
 }
 
 func TestReflection(t *testing.T) {
-	handler := NewStructHandler(&EchoService{})
+	handler := newStructHandler(&EchoService{})
 
-	if len(handler.methods) != 1 {
-		t.Errorf("Expected %d method, got %d", 1, len(handler.methods))
+	if len(handler.methods) != 2 {
+		t.Errorf("Expected %d method, got %d", 2, len(handler.methods))
 	}
 }
 
 func TestHandling(t *testing.T) {
-	handler := NewStructHandler(&EchoService{})
+	handler := newStructHandler(&EchoService{})
 	req := protocol.Request{
 		Method: "echo",
 		Params: utils.ParamsFormat("foobar"),
@@ -47,7 +52,7 @@ func TestHandling(t *testing.T) {
 }
 
 func TestUnknownMethod(t *testing.T) {
-	handler := NewStructHandler(&EchoService{})
+	handler := newStructHandler(&EchoService{})
 	req := protocol.Request{
 		Method: "blabla",
 		Params: utils.ParamsFormat("foobar"),
@@ -62,7 +67,7 @@ func TestUnknownMethod(t *testing.T) {
 }
 
 func TestWrongArgumentsMethod(t *testing.T) {
-	handler := NewStructHandler(&EchoService{})
+	handler := newStructHandler(&EchoService{})
 	req := protocol.Request{
 		Method: "echo",
 		Params: utils.ParamsFormat("foobar", 1),
@@ -76,5 +81,17 @@ func TestWrongArgumentsMethod(t *testing.T) {
 	}
 }
 
-// TODO: Dealing with headers.
-// TODO: RemoteError
+func TestRemoteError(t *testing.T) {
+	handler := newStructHandler(&EchoService{})
+	req := protocol.Request{
+		Method: "fail",
+		Params: utils.ParamsFormat("foobar"),
+	}
+	resp := &dummy.ResponseWriter{}
+
+	handler.Handle(resp, &req)
+
+	if resp.Error == nil || resp.Error.Error() != "Fail!" {
+		t.Errorf("expected to fail with 'Fail!' got %s", resp.Error)
+	}
+}

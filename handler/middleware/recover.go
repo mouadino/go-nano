@@ -15,7 +15,8 @@ type recoverMiddleware struct {
 	stackSize int
 }
 
-func NewRecoverMiddleware(logger *log.Logger, showStack bool, stackSize int) handler.Middleware {
+// NewRecover returns a middleware that allow to recover from panic errors.
+func NewRecover(logger *log.Logger, showStack bool, stackSize int) handler.Middleware {
 	return func(wrapped handler.Handler) handler.Handler {
 		return &recoverMiddleware{
 			wrapped:   wrapped,
