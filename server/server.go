@@ -1,5 +1,5 @@
 /*
-package server define how to serve RPC services.
+Package server define how to serve RPC services.
 
 Usage:
 

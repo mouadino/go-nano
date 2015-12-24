@@ -83,10 +83,13 @@ func (z *zookeeperAnnounceResolver) Resolve(name string) (*discovery.Service, er
 	if err != nil {
 		return nil, err
 	}
-	if s, ok := z.cache[name]; ok {
+	z.mu.RLock()
+	s, ok := z.cache[name]
+	z.mu.RUnlock()
+	if ok {
 		return s, nil
 	}
-	s, err := z.resolve(name)
+	s, err = z.resolve(name)
 	if err != nil {
 		z.mu.Lock()
 		z.cache[name] = s
