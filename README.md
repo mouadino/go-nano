@@ -51,7 +51,6 @@ Protocols:
 Client:
 
 - [X] Client
-- [ ] Command line
 - [X] Circuit Breaker
 - [X] Timeout
 - [X] Retry
@@ -67,6 +66,7 @@ Server:
 
 Misc:
 
+- [ ] Command lines
 - [ ] Configuration
 - [ ] Logging
 - [ ] Context
@@ -74,9 +74,9 @@ Misc:
 - [X] Discovery
 - [ ] Testing tools
 - [ ] Protocol/Transport negotiation
-- [ ] Notification (a.k.a One way message)
+- [ ] PubSub
 - [X] Add to travis/circleCI ...
-- [ ] GoDoc
+- [X] GoDoc
 - [ ] More complete example (e.g. user service)
 
 ## Examples

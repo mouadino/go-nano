@@ -1,6 +1,5 @@
 /*
-Package client represents an RPC client that is enable to make request
-to remote services.
+Package client represents an RPC client to make request to a remote services.
 
 Example:
 

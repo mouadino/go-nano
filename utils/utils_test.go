@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"net"
 	"reflect"
 	"testing"
 
@@ -23,5 +24,23 @@ func TestParamsFormat(t *testing.T) {
 		if !reflect.DeepEqual(test.out, out) {
 			t.Errorf("ParamsFormat(%s) => %q, want %q", test.in, out, test.out)
 		}
+	}
+}
+
+func TestGetExternalIP(t *testing.T) {
+	addr, err := GetExternalIP()
+
+	ip := net.ParseIP(addr)
+
+	if err != nil {
+		t.Fatalf("unexpected failure %s", err)
+	}
+
+	if ip.IsLoopback() {
+		t.Errorf("ip is looback")
+	}
+
+	if ip.IsUnspecified() {
+		t.Errorf("ip is unspecified")
 	}
 }

@@ -17,6 +17,7 @@ type circuitBreakerExt struct {
 
 // NewCircuitBreakerExt returns an extension that implements the circuit breaker
 // pattern. Currently no remote exception is counted.
+// FIXME: extensions are client specific this mean that all requests share same cb.
 func NewCircuitBreakerExt(cb *circuit.Breaker) Extension {
 	return func(next protocol.Sender) protocol.Sender {
 		return &circuitBreakerExt{

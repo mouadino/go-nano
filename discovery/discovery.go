@@ -2,6 +2,8 @@
 package discovery defines common structs and interfaces for discovering and announcing
 RPC services.
 */
+
+// TODO: Add possibility to update announced instance metadata.
 package discovery
 
 import (

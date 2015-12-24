@@ -24,6 +24,7 @@ type retryExt struct {
 // failed requests using given backoff.
 // This extension assuming nothing about whether service is idempotent
 // or not, only request that are not sent are retried.
+// FIXME: Middlewares are client specific this mean that all requests share the same backoff.
 func NewRetryExt(maxTries int, backoff backoff.BackOff) Extension {
 	return func(next protocol.Sender) protocol.Sender {
 		return &retryExt{

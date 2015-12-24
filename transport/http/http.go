@@ -22,15 +22,17 @@ type HTTPTransport struct {
 }
 
 // New creates a new HTTP transport.
-func New() transport.Transport {
+func New() *HTTPTransport {
 	return &HTTPTransport{
 		mux:  http.NewServeMux(),
 		reqs: make(chan transport.Request),
 	}
 }
 
+// Listen instruct the http server to listen on random port and
+// external ip of the node.
 func (trans *HTTPTransport) Listen() error {
-	trans.mux.HandleFunc(RPCPath, trans.handler)
+	trans.mux.HandleFunc(RPCPath, trans.handle)
 	ip, err := utils.GetExternalIP()
 	if err != nil {
 		return err
@@ -46,11 +48,12 @@ func (trans *HTTPTransport) Listen() error {
 	return nil
 }
 
+// Addr returns listening address in the form: http://...:...
 func (trans *HTTPTransport) Addr() string {
 	return trans.addr
 }
 
-func (trans *HTTPTransport) handler(rw http.ResponseWriter, req *http.Request) {
+func (trans *HTTPTransport) handle(rw http.ResponseWriter, req *http.Request) {
 	body, err := ioutil.ReadAll(req.Body)
 	defer req.Body.Close()
 	if err != nil {
@@ -70,6 +73,7 @@ func (trans *HTTPTransport) handler(rw http.ResponseWriter, req *http.Request) {
 	<-resp.sent
 }
 
+// Send a raw request to given endpoint.
 func (trans *HTTPTransport) Send(endpoint string, body io.Reader) ([]byte, error) {
 	endpoint += RPCPath
 	// TODO: content-type doesn't belong here.
@@ -80,6 +84,7 @@ func (trans *HTTPTransport) Send(endpoint string, body io.Reader) ([]byte, error
 	return ioutil.ReadAll(resp.Body)
 }
 
+// Receive returns received requests.
 func (trans *HTTPTransport) Receive() <-chan transport.Request {
 	return trans.reqs
 }
