@@ -30,11 +30,13 @@ func (staticResolver) Resolve(name string) (*discovery.Service, error) {
 
 func TestLoadBalancer(t *testing.T) {
 	lb := New(staticResolver{}, firstStrategy{})
-
-	sender := lb(dummy.New())
+	rw := dummy.NewResponseRecorder()
 	req := &protocol.Request{
 		Method: "foo",
 	}
+
+	sender := lb(dummy.New(rw, req))
+
 	_, err := sender.Send("nanoTest", req)
 	if err != nil {
 		t.Fatalf("Unexcpected failure %s", err)

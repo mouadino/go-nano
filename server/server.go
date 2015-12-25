@@ -52,7 +52,7 @@ func New(proto protocol.Protocol) *Server {
 // Register given handler under name.
 func (s *Server) Register(name string, svc interface{}, ms ...handler.Middleware) error {
 	hdlr := middleware.Chain(handler.New(svc), ms...)
-	return s.mux.Register(name, hdlr)
+	return s.mux.Add(name, hdlr)
 }
 
 // Register given handler under name with given metadata.

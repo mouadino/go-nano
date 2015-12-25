@@ -13,6 +13,10 @@ type ResponseWriter struct {
 	HeaderValues header.Header
 }
 
+func NewResponseRecorder() *ResponseWriter {
+	return &ResponseWriter{}
+}
+
 func (rw *ResponseWriter) Header() header.Header {
 	return rw.HeaderValues
 }
@@ -29,19 +33,20 @@ func (rw *ResponseWriter) SetError(err error) error {
 
 type dummyProtocol struct {
 	trans transport.Transport
+	rw    *ResponseWriter
+	req   *protocol.Request
 }
 
-func New() protocol.Protocol {
+func New(rw *ResponseWriter, req *protocol.Request) protocol.Protocol {
 	return &dummyProtocol{
 		trans: memory.New([][]byte{}, [][]byte{}),
+		req:   req,
+		rw:    rw,
 	}
 }
 
 func (p *dummyProtocol) Receive() (protocol.ResponseWriter, *protocol.Request, error) {
-	// TODO: Dummy implementation
-	rw := &ResponseWriter{}
-	req := &protocol.Request{}
-	return rw, req, nil
+	return p.rw, p.req, nil
 }
 
 func (p *dummyProtocol) Transport() transport.Transport {
