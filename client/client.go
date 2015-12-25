@@ -15,10 +15,10 @@ Using asynchronous api:
 
 With discovery:
 
-    zk := zookeeper.New("127.0.0.1:2181")
-    c := client.New("upper", jsonrpc.New(http.New()), loadbalancer.New(zk, loadbalancer.NewRoundRobin()))
-    reply, err := c.Call("Upper", "foo")
-    fmt.Println(reply)
+		zk := zookeeper.New("127.0.0.1:2181")
+		c := client.New("upper", jsonrpc.New(http.New()), loadbalancer.New(zk, loadbalancer.NewRoundRobin()))
+		reply, err := c.Call("Upper", "foo")
+		fmt.Println(reply)
 
 */
 package client
@@ -31,10 +31,9 @@ import (
 
 // Future represents the response of an asynchronous client request.
 type Future struct {
-	resp  interface{}
-	err   error
-	done  chan struct{}
-	ready bool
+	resp interface{}
+	err  error
+	done chan struct{}
 }
 
 func newFuture() *Future {
@@ -45,16 +44,13 @@ func newFuture() *Future {
 
 // Result returns the future result, block until request finish.
 func (f *Future) Result() (interface{}, error) {
-	if !f.ready {
-		<-f.done
-	}
+	<-f.done
 	return f.resp, f.err
 }
 
 func (f *Future) set(resp interface{}, err error) {
 	f.resp = resp
 	f.err = err
-	f.ready = true
 	f.done <- struct{}{}
 }
 
@@ -72,14 +68,12 @@ func New(endpoint string, sender protocol.Sender, exts ...extension.Extension) C
 	}
 }
 
-// Send a raw protocol request to client endpoint, waits service to respond, and returns
-// either an error or service response.
+// Send a raw request to endpoint, waits service to respond.
 func (c *Client) Send(req *protocol.Request) (*protocol.Response, error) {
 	return c.sender.Send(c.endpoint, req)
 }
 
-// Call a remote method with given parameters, waits service to respond, and returns
-// either an error or service response.
+// Call a remote method with given parameters, waits service to respond.
 func (c *Client) Call(method string, params ...interface{}) (interface{}, error) {
 	req := protocol.Request{
 		Method: method,
@@ -95,7 +89,7 @@ func (c *Client) Call(method string, params ...interface{}) (interface{}, error)
 	return resp.Body, nil
 }
 
-// Go calls a remote function asynchronously and returns a future object.
+// Go calls a remote function asynchronously and returns a future.
 func (c *Client) Go(method string, params ...interface{}) *Future {
 	f := newFuture()
 	go func() {

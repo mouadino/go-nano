@@ -3,7 +3,6 @@ package discovery defines common structs and interfaces for discovering and anno
 RPC services.
 */
 
-// TODO: Add possibility to update announced instance metadata.
 package discovery
 
 import (
@@ -41,6 +40,7 @@ func (s *Service) String() string {
 	return fmt.Sprintf("%s [%d]", s.Name, len(s.Instances))
 }
 
+// TODO: Add possibility to update announced instance metadata.
 // Instance represents an RPC instance, usually this map to one process.
 type Instance struct {
 	ID       string

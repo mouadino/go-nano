@@ -69,7 +69,7 @@ func (trans *HTTPTransport) handle(rw http.ResponseWriter, req *http.Request) {
 		Resp: &resp,
 	}
 	// Wait here else http.ResponseWriter became invalid.
-	// TODO: Timeout !?, http.Hijacker ?
+	// TODO: Timeout !?, http.Hijacker ? Can we do better ?
 	<-resp.sent
 }
 
@@ -77,6 +77,7 @@ func (trans *HTTPTransport) handle(rw http.ResponseWriter, req *http.Request) {
 func (trans *HTTPTransport) Send(endpoint string, body io.Reader) ([]byte, error) {
 	endpoint += RPCPath
 	// TODO: content-type doesn't belong here.
+	// TODO: Send RPC headers as HTTP headers ?
 	resp, err := http.Post(endpoint, "application/json-rpc", body)
 	if err != nil {
 		return nil, err

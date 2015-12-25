@@ -6,28 +6,28 @@ For pragmatic reasons we can construct a Handler from any struct using
 reflection, where methods that satisfy these criteria will be made
 available for remote access:
 
-  - the method is exported.
+	- the method is exported.
 	- the method returns two result, the second is of type error.
 
 To be more concret for a method to be exposed, this later should look like:
 
-    func (t *T) MethodName(arg1 T1, arg2 T2, ...) (replyType, error)
+	func (t *T) MethodName(arg1 T1, arg2 T2, ...) (replyType, error)
 
 Here is a simple example of a valid service definition using a normal struct:
 
-    type S struct {}
+	type S struct {}
 
-		func (S) Add(a, b int) (int, error) {
-			return a + b, nil
-		}
+	func (S) Add(a, b int) (int, error) {
+	return a + b, nil
+	}
 
 The same service implemented using a plain old handler will look:
 
-    func AddHandler(rw protocol.ResponseWriter, req *protocol.Request) {
-			a = req.Params["_0"].(int)
-			b = req.Params["_1"].(int)
-			rw.Set(a + b)
-		}
+	func AddHandler(rw protocol.ResponseWriter, req *protocol.Request) {
+		a = req.Params["_0"].(int)
+		b = req.Params["_1"].(int)
+		rw.Set(a + b)
+	}
 
 */
 package handler

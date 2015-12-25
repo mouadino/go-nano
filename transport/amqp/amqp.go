@@ -23,7 +23,21 @@ type AMQPTransport struct {
 	listening       bool
 }
 
-// TODO: Add options.
+// Exchange option to set exchange name, default "nano".
+func Exchange(name string) func(*AMQPTransport) {
+	return func(t *AMQPTransport) {
+		t.exchange = name
+	}
+}
+
+// QueueName option to set queue name, default name of go binary.
+func QueueName(name string) func(*AMQPTransport) {
+	return func(t *AMQPTransport) {
+		t.listenQueue = name
+	}
+}
+
+// New returns a Transport that use AMQP to send/receive RPC messages.
 func New(url string, options ...func(*AMQPTransport)) transport.Transport {
 	t := &AMQPTransport{
 		url:             url,
@@ -125,6 +139,7 @@ func (trans *AMQPTransport) sendRequest(routingKey string, message io.Reader) (s
 		return "", err
 	}
 	// TODO: Expire time ?
+	// TODO: Persistence ?
 	msg := amqp.Publishing{
 		ContentType:   "text/plain",
 		Body:          body,
