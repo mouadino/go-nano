@@ -77,3 +77,5 @@ func TestHTTPAddr(t *testing.T) {
 		t.Errorf("unexpected scheme want %q, got %q", "http", addr.Scheme)
 	}
 }
+
+// TODO: Add benchmarks.

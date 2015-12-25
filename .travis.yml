@@ -1,5 +1,8 @@
 language: go
 
+services:
+   rabbitmq
+
 go:
     - 1.4.2
     - 1.5
