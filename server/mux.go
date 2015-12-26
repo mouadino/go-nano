@@ -20,10 +20,10 @@ func (m *handlersMux) Names() []string {
 	return keys
 }
 
-func (m *handlersMux) Register(name string, hdlr handler.Handler) error {
+func (m *handlersMux) Add(name string, hdlr handler.Handler) error {
 	_, exists := m.hdlrs[name]
 	if exists {
-		return fmt.Errorf("name %q already registered", name)
+		return fmt.Errorf("name %q already exist", name)
 	}
 
 	m.hdlrs[name] = hdlr
