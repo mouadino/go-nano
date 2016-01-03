@@ -1,5 +1,7 @@
 // +build integration
 
+// FIXME: Flaky test
+
 package zookeeper
 
 import (

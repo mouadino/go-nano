@@ -136,9 +136,9 @@ func TestServeHandler(t *testing.T) {
 		t.Fatalf("unexpected failure %s", err)
 	}
 
-	server.Serve()
+	go server.Serve()
 
-	time.Sleep(1 * time.Second)
+	<-time.After(1 * time.Second)
 
 	if rw.Data.(string) != "foobar" {
 		t.Errorf("handler want %q, got %q", "foobar", rw.Data)
@@ -159,9 +159,9 @@ func TestServeUnknownHandler(t *testing.T) {
 		t.Fatalf("unexpected failure %s", err)
 	}
 
-	server.Serve()
+	go server.Serve()
 
-	time.Sleep(1 * time.Second)
+	<-time.After(1 * time.Second)
 
 	if rw.Error == nil || rw.Error.Error() != `Unknown handler "UnknownMethod"` {
 		t.Errorf("expected error got %q", rw.Error)

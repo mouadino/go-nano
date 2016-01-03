@@ -37,17 +37,17 @@ func main() {
 		[]string{*zkHost},
 	)
 
-	serv := server.New(jsonrpc.New(http.New()))
-	serv.Register("upper", upperService{}, ms...)
+	httpServ := server.New(jsonrpc.New(http.New()))
+	httpServ.Register("upper", upperService{}, ms...)
 
-	if err := serv.ServeAndAnnounce(zkAnnouncer); err != nil {
-		panic(err)
-	}
+	go func() {
+		if err := httpServ.ServeAndAnnounce(zkAnnouncer); err != nil {
+			panic(err)
+		}
+	}()
 
-	serv = server.New(jsonrpc.New(amqp.New(*rmqHost)))
-	serv.Register("upper", upperService{}, ms...)
+	amqpServ := server.New(jsonrpc.New(amqp.New(*rmqHost)))
+	amqpServ.Register("upper", upperService{}, ms...)
 
-	serv.Serve()
-
-	server.Wait()
+	amqpServ.Serve()
 }
