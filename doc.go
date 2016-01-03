@@ -1,18 +1,24 @@
 /*
 Package nano is a toolkit for building services in golang. It's build on exiting mature golang
-library and best practices to give it's user a familiar setup on how to create and manage services
-in golang.
+library and best practices to give it's user a nice (I am biased) api on how to create and manage
+services in golang.
 
-A usual service written with "nano" is composed of a "handler" which is where business logic reside,
-on top of that we can define "middlewares" which wraps a "handler" to implement application logic
-dynamically e.g. logging, tracing, auth ... . A "handler" can be exposed using different transport
-and protocol, this allow a service written in "nano" to talk to other services written using different
-stacks.
+A usual service written with Nano is composed of a "handler" which is where business logic reside,
+on top of that developers can use/write a "middlewares" which wraps a "handler" to implement application logic
+e.g. logging, tracing, auth, rate limiting ... . that's from producer side, from consumer side Nano contains
+a client to talk to services with client extensions which are same as middlewares but for client side, example
+of such extensions is retry, backoff, circuit breaker ... .
 
-Here we will define a high overview on how "nano" services are structured, to do that we will be writing
-a simple echo service..
+A "handler" can be exposed using multiple transport and protocol, this make services written in Nano usable from other
+services written using different stacks.
 
-you first start by defining a "handler" which can be done either by using reflection:
+To give you more concrete description on how Nano can be used, we will start by writting a simple echo service.
+
+Nano was designed in a way that hide the complexity of creating a service by letting it's users focus more on the
+business logic of your service which is usually where you should start when writing a service.
+
+In Nano word, business logic live inside what we call a "handler". To create a handler you can either create a simple
+golang struct and let Nano reflect it:
 
 		package main
 
@@ -42,7 +48,9 @@ Or by implementing the handler.Handler interface directly:
 			rw.Set(msg)
 		}
 
-Next we will expose our handler using HTTP transport and JSON/RPC protocol:
+Now that we have our business logic done, the next step it to expose it as a service. With Nano you can expose your
+handler using different transport/protocol (multiple at the same time if necessary), for our simple example we will expose
+our handler using HTTP transport and JSON/RPC protocol:
 
 		package main
 
@@ -54,26 +62,22 @@ Next we will expose our handler using HTTP transport and JSON/RPC protocol:
 
 		func main() {
 			serv := server.New(jsonrpc.New(http.New()))
-
 			serv.Register("echo", hdlr)
-
 			serv.Serve()
 		}
 
-To use service discovery you can replace main function with:
+Something that is also very common when exposing a service is to be able to register it under a discovery system (like zookeeper),
+in this case our main function should be:
 
 		func main() {
 			serv := server.New(jsonrpc.New(http.New()))
-
 			serv.Register("echo", hdlr)
-
-			zk := zookeeper.New([]string{"127.0.0.1:2181"})
-			serv.ServeAndAnnounce(zk)
+			serv.ServeAndAnnounce(zookeeper.New([]string{"127.0.0.1:2181"}))
 		}
 
-This make our hanlder available under the name "echo".
+This make our handler available under the name "echo".
 
-Now from client side we can talk to our "echo" service:
+Now to consume our service using Nano, we will create a client and call our echo function:
 
 		package main
 
@@ -89,20 +93,21 @@ Now from client side we can talk to our "echo" service:
 			c := client.New("http://127.0.0.1:23765", jsonrpc.New(http.New()))
 
 			msg, err := c.Call("echo", "Hello, World!")
-
+			// Or c.Call("echo.echo", ...) If reflection was used to create the handler.
 			if err != nil {
 				panic(err)
 			}
-
 			fmt.Printf("Echo returned %s", msg)
 		}
 
-If service discovery was used we will not have to hardcode the echo service endpoint, instead
+If service discovery was used there will be no need to have a hardcoded echo service endpoint, instead
 our client setup will look like this:
 
 		func main() {
-			zk := zookeeper.New([]string{"127.0.0.1:2181"})
-			lb := loadbalancer.New(zk, loadbalancer.NewRoundRobin())
+			lb := loadbalancer.New(
+				zookeeper.New([]string{"127.0.0.1:2181"}),
+				loadbalancer.NewRoundRobin(),
+			)
 
 			c := client.New(echo, jsonrpc.New(http.New()), lb)
 
