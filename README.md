@@ -46,7 +46,7 @@ Protocols:
 
 - [X] JSON-RPC Protocol (Minimal)
 - [ ] ProtocolBuffer
-- [X] Lymph Protocol (https://github.com/mouadino/go-lymph)
+- [X] Lymph Protocol (http://lymph.readthedocs.org/en/latest/protocol.html https://github.com/mouadino/go-lymph)
 
 Client:
 
@@ -64,17 +64,22 @@ Server:
 - [ ] Rate limit middleware
 - [X] Registration
 
+Command lines:
+
+- [ ] gonano request
+- [ ] gonano get
+- [ ] gonano list
+
 Misc:
 
-- [ ] Command lines
-- [ ] Configuration
-- [ ] Logging
-- [ ] Context
-- [ ] Metrics
+- [ ] Logging (https://godoc.org/gopkg.in/inconshreveable/log15.v2)
+- [ ] Context (https://blog.golang.org/context)
+- [ ] Metrics (https://github.com/rcrowley/go-metrics)
 - [X] Discovery
-- [ ] Testing tools
+- [ ] Testing tools (mocking, fake services)
 - [ ] Protocol/Transport negotiation
 - [ ] PubSub
+- [ ] Notify (One way messages)
 - [X] Add to travis/circleCI ...
 - [X] GoDoc
 - [ ] More complete example (e.g. user service)
