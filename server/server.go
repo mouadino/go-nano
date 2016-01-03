@@ -68,15 +68,26 @@ func (s *Server) RegisterWithMetadata(name string, svc interface{}, meta map[str
 // Serve listens on transport addr (if there is any) and then
 // start handling requests from transport.
 func (s *Server) Serve() {
-	trans := s.proto.Transport()
-	trans.Listen()
+	s.listen()
 	go s.loop()
+	wait()
 }
 
 // ServeAndAnnounce start by serving server than announce it in the given Announcer.
 func (s *Server) ServeAndAnnounce(an discovery.Announcer) error {
-	s.Serve()
-	return s.announce(an)
+	s.listen()
+	err := s.announce(an)
+	if err != nil {
+		return err
+	}
+	go s.loop()
+	wait()
+	return nil
+}
+
+func (s *Server) listen() {
+	trans := s.proto.Transport()
+	trans.Listen()
 }
 
 func (s *Server) announce(an discovery.Announcer) error {
@@ -110,8 +121,7 @@ func (s *Server) loop() {
 	}
 }
 
-// Wait until user type CTRL-C.
-func Wait() {
+func wait() {
 	term := make(chan os.Signal)
 	signal.Notify(term, os.Interrupt, syscall.SIGTERM)
 	select {

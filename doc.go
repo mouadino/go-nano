@@ -58,9 +58,20 @@ Next we will expose our handler using HTTP transport and JSON/RPC protocol:
 			serv.Register("echo", hdlr)
 
 			serv.Serve()
-
-			server.Wait()
 		}
+
+To use service discovery you can replace main function with:
+
+		func main() {
+			serv := server.New(jsonrpc.New(http.New()))
+
+			serv.Register("echo", hdlr)
+
+			zk := zookeeper.New([]string{"127.0.0.1:2181"})
+			serv.ServeAndAnnounce(zk)
+		}
+
+This make our hanlder available under the name "echo".
 
 Now from client side we can talk to our "echo" service:
 
@@ -86,8 +97,18 @@ Now from client side we can talk to our "echo" service:
 			fmt.Printf("Echo returned %s", msg)
 		}
 
-Last but not least, you saw how we had to hardcode the echo service endpoint, which
-is not optimal, that's why "nano" come with service discovery out of the box.
+If service discovery was used we will not have to hardcode the echo service endpoint, instead
+our client setup will look like this:
+
+		func main() {
+			zk := zookeeper.New([]string{"127.0.0.1:2181"})
+			lb := loadbalancer.New(zk, loadbalancer.NewRoundRobin())
+
+			c := client.New(echo, jsonrpc.New(http.New()), lb)
+
+			// Then use client like above.
+
+		}
 
 */
 package nano

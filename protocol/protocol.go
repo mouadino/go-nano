@@ -19,6 +19,20 @@ type Protocol interface {
 	Transport() transport.Transport
 }
 
+type ProtocolV2 interface {
+	EncodeRequest(Request) []byte
+	DecodeRequest([]byte) Request
+
+	EncodeResponse(Response) []byte
+	DecodeResponse([]byte) Response
+
+	EncodeError(error) []byte
+	DecodeError([]byte) error
+
+	// String returns the name of the protocol, to be used in content-type and uri scheme.
+	String()
+}
+
 type Params map[string]interface{}
 
 type Request struct {
