@@ -1,14 +1,14 @@
 package extension
 
-import "github.com/mouadino/go-nano/protocol"
+import "github.com/mouadino/go-nano/transport"
 
 // Extension define a decorator to apply on client for customization purposes.
-type Extension func(protocol.Sender) protocol.Sender
+type Extension func(transport.Sender) transport.Sender
 
 // Decorate wraps a sender using the given client extensions.
-func Decorate(rs protocol.Sender, exts ...Extension) protocol.Sender {
+func Decorate(next transport.Sender, exts ...Extension) transport.Sender {
 	for _, ext := range exts {
-		rs = ext(rs)
+		next = ext(next)
 	}
-	return rs
+	return next
 }

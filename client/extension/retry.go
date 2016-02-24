@@ -8,6 +8,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/mouadino/go-nano/protocol"
+	"github.com/mouadino/go-nano/transport"
 )
 
 // RetryExceeded represents the error returned when client fail
@@ -15,7 +16,7 @@ import (
 var RetryExceeded = errors.New("retry attempts exceeded")
 
 type retryExt struct {
-	next     protocol.Sender
+	next     transport.Sender
 	maxTries int
 	backoff  backoff.BackOff
 }
@@ -26,7 +27,7 @@ type retryExt struct {
 // or not, only request that are not sent are retried.
 // FIXME: Middlewares are client specific this mean that all requests share the same backoff.
 func NewRetryExt(maxTries int, backoff backoff.BackOff) Extension {
-	return func(next protocol.Sender) protocol.Sender {
+	return func(next transport.Sender) transport.Sender {
 		return &retryExt{
 			next:     next,
 			maxTries: maxTries,

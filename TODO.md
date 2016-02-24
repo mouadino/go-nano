@@ -1,0 +1,24 @@
+- Use https://godoc.org/gopkg.in/inconshreveable/log15.v2
+- Introduce https://godoc.org/golang.org/x/net/context
+   - Associate context data with context e.g. trace-id.
+- Check https://godoc.org/golang.org/x/net/trace
+- Refactor transport/Protocol
+   - think about performance
+   - get rid of idea of receive returns a channel since this
+     serialization will make it slow
+   - don't plug transport in protocol instead make protocol statless
+- Fix remote errors
+   - Introduce something like nano.Error(code, msg)
+   - Figure out how to fix equality operator for errors in client side
+     (reflect.DeepEqual!)
+- Rethink the idea of ``Params["_0"]``
+   - Introduce something like Request, Response structs?
+   - Think how protocol can interact with those? de/serialization?
+- https://godoc.org/github.com/tylerb/graceful
+- Don't name command line "nano" (should be obvious why)
+- client mock (register/replay/check)
+- Support request cancelation
+   - different transports may support it or not
+   - Think how rabbitmq should support it.
+- one way messages (ala thrift)
+- Kubernetes and go-nano

@@ -1,48 +1,47 @@
 package memory
 
 import (
-	"io"
-
+	"github.com/mouadino/go-nano/handler"
+	"github.com/mouadino/go-nano/protocol"
 	"github.com/mouadino/go-nano/transport"
 )
 
 type memoryTransport struct {
-	reqs  chan transport.Request
-	resps [][]byte
+	proto protocol.Protocol
+	hdlr  handler.Handler
+
+	reqs chan *protocol.Request
 }
 
-func New(reqs [][]byte, resps [][]byte) transport.Transport {
-	ch := make(chan transport.Request, len(reqs)+1)
-	for _, b := range reqs {
-		ch <- transport.Request{b, &DumpResponseWriter{}}
-	}
+func New() transport.Transport {
 	return &memoryTransport{
-		ch,
-		resps,
+		reqs: make(chan *protocol.Request),
 	}
 }
 
-func (trans *memoryTransport) Receive() <-chan transport.Request {
-	return trans.reqs
+func (trans *memoryTransport) Send(endpoint string, req *protocol.Request) (*protocol.Response, error) {
+	resp := &protocol.Response{}
+	trans.hdlr.Handle(resp, req)
+	return resp, nil
 }
 
-func (trans *memoryTransport) Send(endpoint string, r io.Reader) ([]byte, error) {
-	return trans.resps[0], nil
-}
-
-func (t *memoryTransport) Listen() error {
+func (trans *memoryTransport) Serve() error {
+	go trans.loop()
 	return nil
 }
 
-func (t *memoryTransport) Endpoint() string {
-	return "<memory>"
+func (trans *memoryTransport) loop() {
+	for req := range trans.reqs {
+		resp := &protocol.Response{}
+		trans.hdlr.Handle(resp, req)
+	}
 }
 
-type DumpResponseWriter struct {
-	Data interface{}
+func (trans *memoryTransport) AddHandler(proto protocol.Protocol, hdlr handler.Handler) {
+	trans.proto = proto
+	trans.hdlr = hdlr
 }
 
-func (rw *DumpResponseWriter) Write(data interface{}) error {
-	rw.Data = data
+func (t *memoryTransport) Listen() error {
 	return nil
 }

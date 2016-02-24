@@ -26,9 +26,11 @@ func main() {
 		zk := zookeeper.New([]string{*zkHost})
 		lb := loadbalancer.New(zk, loadbalancer.NewRoundRobin())
 
-		cl = client.New("upper", jsonrpc.New(http.New()), lb, extension.NewTimeoutExt(1*time.Second))
+		// TODO: Add protocol.
+		cl = client.New("upper", http.New(), lb, extension.NewTimeoutExt(1*time.Second))
 	} else if *trans == "amqp" {
-		cl = client.New("upper", jsonrpc.New(amqp.New(*rmqHost)), extension.NewTimeoutExt(2*time.Second))
+		cl = client.New("upper", amqp.New(*rmqHost), jsonrpc.New(), extension.NewTimeoutExt(2*time.Second))
+		panic("amqp not supported")
 	} else {
 		panic("unknown transport")
 	}

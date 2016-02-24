@@ -10,6 +10,17 @@ import (
 
 type Slice []interface{}
 
+func checkIP(t *testing.T, addr string) {
+	ip := net.ParseIP(addr)
+	if ip.IsLoopback() {
+		t.Errorf("ip is looback")
+	}
+
+	if ip.IsUnspecified() {
+		t.Errorf("ip is unspecified")
+	}
+}
+
 func TestParamsFormat(t *testing.T) {
 	paramsTests := []struct {
 		in  Slice
@@ -30,17 +41,35 @@ func TestParamsFormat(t *testing.T) {
 func TestGetExternalIP(t *testing.T) {
 	addr, err := GetExternalIP()
 
-	ip := net.ParseIP(addr)
-
 	if err != nil {
 		t.Fatalf("unexpected failure %s", err)
 	}
 
-	if ip.IsLoopback() {
-		t.Errorf("ip is looback")
+	checkIP(t, addr)
+}
+
+func TestListener(t *testing.T) {
+	ln, err := GetListener("10.0.0.1")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
 	}
 
-	if ip.IsUnspecified() {
-		t.Errorf("ip is unspecified")
+	ip := ln.Addr().String()
+
+	if ip != "10.0.0.1" {
+		t.Errorf("IP doesn't match want 10.0.0.1, got %q", ip)
 	}
+}
+
+func TestListenerEmptyAddress(t *testing.T) {
+	ln, err := GetListener("")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	ip := ln.Addr().String()
+
+	checkIP(t, ip)
 }

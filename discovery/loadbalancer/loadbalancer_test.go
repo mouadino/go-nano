@@ -5,8 +5,16 @@ import (
 
 	"github.com/mouadino/go-nano/discovery"
 	"github.com/mouadino/go-nano/protocol"
-	"github.com/mouadino/go-nano/protocol/dummy"
 )
+
+type dummySender struct{}
+
+func (dummySender) Send(e string, req *protocol.Request) (*protocol.Response, error) {
+	resp := &protocol.Response{
+		Body: "",
+	}
+	return resp, nil
+}
 
 type firstStrategy struct{}
 
@@ -30,15 +38,17 @@ func (staticResolver) Resolve(name string) (*discovery.Service, error) {
 
 func TestLoadBalancer(t *testing.T) {
 	lb := New(staticResolver{}, firstStrategy{})
-	rw := dummy.NewResponseRecorder()
 	req := &protocol.Request{
 		Method: "foo",
 	}
 
-	sender := lb(dummy.New(rw, req))
+	sender := lb(dummySender{})
 
-	_, err := sender.Send("nanoTest", req)
+	_, err := sender.Send(":dummy:", req)
+
 	if err != nil {
 		t.Fatalf("Unexcpected failure %s", err)
 	}
+
+	// TODO: Add more assertion.
 }

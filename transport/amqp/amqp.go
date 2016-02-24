@@ -1,50 +1,55 @@
 package amqp
 
 import (
-	"io"
-	"io/ioutil"
+	"bytes"
 	"os"
 	"path"
+	"sync"
 
 	log "github.com/Sirupsen/logrus"
+
+	"github.com/mouadino/go-nano/handler"
+	"github.com/mouadino/go-nano/header"
+	"github.com/mouadino/go-nano/protocol"
 	"github.com/mouadino/go-nano/transport"
 	"github.com/pborman/uuid"
 	"github.com/streadway/amqp"
 )
 
-type AMQPTransport struct {
+type amqpTransport struct {
 	url             string
 	exchange        string
 	conn            *amqp.Connection
-	reqs            chan transport.Request
 	listenQueue     string
 	logger          *log.Logger
 	pendingRequests map[string]chan []byte
+	mu              sync.RWMutex
 	listening       bool
+	proto           protocol.Protocol
+	hdlr            handler.Handler
 }
 
 // Exchange option to set exchange name, default "nano".
-func Exchange(name string) func(*AMQPTransport) {
-	return func(t *AMQPTransport) {
+func Exchange(name string) func(*amqpTransport) {
+	return func(t *amqpTransport) {
 		t.exchange = name
 	}
 }
 
 // QueueName option to set queue name, default name of go binary.
-func QueueName(name string) func(*AMQPTransport) {
-	return func(t *AMQPTransport) {
+func QueueName(name string) func(*amqpTransport) {
+	return func(t *amqpTransport) {
 		t.listenQueue = name
 	}
 }
 
 // New returns a Transport that use AMQP to send/receive RPC messages.
-func New(url string, options ...func(*AMQPTransport)) transport.Transport {
-	t := &AMQPTransport{
+func New(url string, options ...func(*amqpTransport)) transport.Transport {
+	t := &amqpTransport{
 		url:             url,
 		exchange:        "nano", // TODO: Is this used ?
 		logger:          log.New(),
 		listenQueue:     path.Base(os.Args[0]), // FIXME: Should be unique per service.
-		reqs:            make(chan transport.Request),
 		pendingRequests: make(map[string]chan []byte),
 	}
 
@@ -54,18 +59,28 @@ func New(url string, options ...func(*AMQPTransport)) transport.Transport {
 	return t
 }
 
-func (trans *AMQPTransport) Listen() error {
+// FIXME: Add handler not set.
+func (trans *amqpTransport) AddHandler(proto protocol.Protocol, hdlr handler.Handler) {
+	trans.proto = proto
+	trans.hdlr = hdlr
+}
+
+func (trans *amqpTransport) Listen() error {
 	err := trans.declareQueue(trans.listenQueue)
 	if err != nil {
 		return err
 	}
 	trans.logger.Info("Listening on ", trans.url, " ", trans.listenQueue)
-	go trans.consumeMessages()
 	trans.listening = true
 	return nil
 }
 
-func (trans *AMQPTransport) consumeMessages() {
+func (trans *amqpTransport) Serve() error {
+	trans.consumeMessages()
+	return nil
+}
+
+func (trans *amqpTransport) consumeMessages() {
 	for {
 		ch, err := trans.getChannel()
 		if err != nil {
@@ -88,75 +103,92 @@ func (trans *AMQPTransport) consumeMessages() {
 		}
 		for msg := range msgs {
 			if msg.ReplyTo == "" {
-				trans.logger.Debug("Reply received for ", msg.CorrelationId)
-				replyCh, ok := trans.pendingRequests[msg.CorrelationId]
-				if ok {
-					replyCh <- msg.Body
-				} else {
-					trans.logger.Error("no request waiting for %s", msg)
-				}
-				msg.Ack(true)
-				// TODO: Remove trans.pendingRequests.
-				// TODO: Mutex.
+				go trans.handleResponse(msg)
 			} else {
-				trans.logger.Debug("New request received")
-				trans.reqs <- transport.Request{
-					Body: msg.Body,
-					Resp: NewAMQPResponseWriter(trans, msg),
-				}
+				go trans.handleRequest(msg)
 			}
 		}
 	}
 }
 
-func (trans *AMQPTransport) Receive() <-chan transport.Request {
-	return trans.reqs
+func (trans *amqpTransport) handleResponse(msg amqp.Delivery) {
+	trans.mu.Lock()
+	defer trans.mu.Unlock()
+	trans.logger.Debug("Reply received for ", msg.CorrelationId)
+	replyCh, ok := trans.pendingRequests[msg.CorrelationId]
+	if ok {
+		replyCh <- msg.Body
+		close(replyCh)
+	} else {
+		trans.logger.Error("no request waiting for %s", msg)
+	}
+	msg.Ack(false)
+	delete(trans.pendingRequests, msg.CorrelationId)
 }
 
-func (trans *AMQPTransport) Send(endpoint string, message io.Reader) ([]byte, error) {
+func (trans *amqpTransport) handleRequest(msg amqp.Delivery) {
+	trans.logger.Debug("New request received")
+	// TODO: Handle error
+	req, _ := trans.proto.DecodeRequest(bytes.NewReader(msg.Body))
+	resp := &protocol.Response{
+		Header: header.Header{},
+	}
+
+	trans.hdlr.Handle(resp, req)
+
+	// TODO: Handle error.
+	body, _ := trans.proto.EncodeResponse(resp)
+	_ = trans.sendReply(msg.ReplyTo, msg.CorrelationId, body)
+
+	msg.Ack(false)
+}
+
+func (trans *amqpTransport) Send(endpoint string, req *protocol.Request) (*protocol.Response, error) {
+	// TODO: Do the listening somewhere else.
 	if !trans.listening {
 		err := trans.Listen()
 		if err != nil {
-			return []byte{}, err
+			return nil, err
 		}
 	}
-	correlationID, err := trans.sendRequest(endpoint, message)
+
+	body, err := trans.proto.EncodeRequest(req)
 	if err != nil {
-		return []byte{}, err
+		return nil, err
+	}
+	replyCh, err := trans.sendRequest(endpoint, body)
+	if err != nil {
+		return nil, err
 	}
 	// TODO: Synchronization.
-	trans.logger.Debug("Waiting for ", correlationID)
-	body := <-trans.pendingRequests[correlationID]
-	trans.logger.Debug("Received  ", correlationID)
+	respBody := <-replyCh
 	// TODO: close channel and delete key.
-	return body, nil
+	return trans.proto.DecodeResponse(bytes.NewReader(respBody))
 }
 
-func (trans *AMQPTransport) sendRequest(routingKey string, message io.Reader) (string, error) {
+func (trans *amqpTransport) sendRequest(routingKey string, body []byte) (<-chan []byte, error) {
 	correlationID := uuid.New()
-	body, err := ioutil.ReadAll(message)
-	if err != nil {
-		return "", err
-	}
 	// TODO: Expire time ?
 	// TODO: Persistence ?
 	msg := amqp.Publishing{
+		// TODO: Use getContentType(trans.proto)
 		ContentType:   "text/plain",
 		Body:          body,
 		CorrelationId: correlationID,
 		ReplyTo:       trans.listenQueue,
 	}
 	trans.logger.Debug("Send request")
-	err = trans.publishMessage(routingKey, msg, false)
+	err := trans.publishMessage(routingKey, msg, false)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	// TODO: Should not leak ? remove after some time.
-	trans.pendingRequests[correlationID] = make(chan []byte)
-	return correlationID, nil
+	replyCh := make(chan []byte, 1)
+	trans.pendingRequests[correlationID] = replyCh
+	return replyCh, nil
 }
 
-func (trans *AMQPTransport) sendReply(routingKey, correlationID string, message []byte) error {
+func (trans *amqpTransport) sendReply(routingKey, correlationID string, message []byte) error {
 	msg := amqp.Publishing{
 		ContentType:   "text/plain",
 		Body:          message,
@@ -166,7 +198,7 @@ func (trans *AMQPTransport) sendReply(routingKey, correlationID string, message 
 	return trans.publishMessage(routingKey, msg, true)
 }
 
-func (trans *AMQPTransport) publishMessage(routingKey string, msg amqp.Publishing, direct bool) error {
+func (trans *amqpTransport) publishMessage(routingKey string, msg amqp.Publishing, direct bool) error {
 	ch, err := trans.getChannel()
 	if err != nil {
 		return err
@@ -187,7 +219,7 @@ func (trans *AMQPTransport) publishMessage(routingKey string, msg amqp.Publishin
 	)
 }
 
-func (trans *AMQPTransport) declareQueue(name string) error {
+func (trans *amqpTransport) declareQueue(name string) error {
 	ch, err := trans.getChannel()
 	if err != nil {
 		return err
@@ -206,7 +238,7 @@ func (trans *AMQPTransport) declareQueue(name string) error {
 	return err
 }
 
-func (trans *AMQPTransport) getChannel() (*amqp.Channel, error) {
+func (trans *amqpTransport) getChannel() (*amqp.Channel, error) {
 	conn, err := trans.getConn()
 	if err != nil {
 		return nil, err
@@ -214,7 +246,7 @@ func (trans *AMQPTransport) getChannel() (*amqp.Channel, error) {
 	return conn.Channel()
 }
 
-func (trans *AMQPTransport) getConn() (*amqp.Connection, error) {
+func (trans *amqpTransport) getConn() (*amqp.Connection, error) {
 	if trans.conn != nil {
 		// TODO: Reconnect when connection drop.
 		return trans.conn, nil

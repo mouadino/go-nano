@@ -16,6 +16,24 @@ func ParamsFormat(ps ...interface{}) protocol.Params {
 	return params
 }
 
+// GetListener returns a net.Listener to a random port using TCP,
+// when an empty string is passed argument, GetListener will try to guess
+// the IP address to use by getting first ip in network interface associated
+// with the default gateway.
+func GetListener(addr string) (net.Listener, error) {
+	var err error
+
+	if addr == "" {
+		addr, err = GetExternalIP()
+	}
+	if err != nil {
+		return nil, err
+	}
+	return net.Listen("tcp", fmt.Sprintf("%s:0", addr))
+}
+
+// TODO: https://github.com/twitter/finagle/blob/develop/finagle-core/src/main/scala/com/twitter/finagle/util/InetSocketAddressUtil.scala#L13
+
 // GetExternalIP returns external ip of local node.
 func GetExternalIP() (string, error) {
 	addrs, err := net.InterfaceAddrs()
@@ -30,5 +48,5 @@ func GetExternalIP() (string, error) {
 			}
 		}
 	}
-	return "", errors.New("not found")
+	return "", errors.New("fail to guess external ip")
 }

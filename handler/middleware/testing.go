@@ -4,5 +4,5 @@ import "github.com/mouadino/go-nano/protocol"
 
 type dummyHandler struct{}
 
-func (h *dummyHandler) Handle(rw protocol.ResponseWriter, req *protocol.Request) {
+func (h *dummyHandler) Handle(resp *protocol.Response, req *protocol.Request) {
 }

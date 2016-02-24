@@ -3,28 +3,35 @@ Package transport defines logic to send and receive RPC requests and responses.
 */
 package transport
 
-import "io"
+import (
+	"net"
 
-// Transport interface define behaviour of transport logic.
-type Transport interface {
-	Listen() error
-	Receive() <-chan Request
-	Send(string, io.Reader) ([]byte, error)
+	"github.com/mouadino/go-nano/handler"
+	"github.com/mouadino/go-nano/protocol"
+	"golang.org/x/net/context"
+)
+
+type Sender interface {
+	Send(string, context.Context, *protocol.Request) (*protocol.Response, error)
 }
 
-// Addresser interface should be implemented by services that support addressing.
-// This interface is usually used with discovery to announce an RPC server with given transport.
-type Addresser interface {
-	Addr() string
+// Server interface represents an RPC server.
+type Server interface {
+	AddHandler(proto protocol.Protocol, hdlr handler.Handler)
+	Serve() error
 }
 
-// ResponseWriter represents interface that transport use to write response to the wire.
-type ResponseWriter interface {
-	Write(interface{}) error
+// Listener interface should be implemented by services that support addressing.
+// This interface is usually used with discovery to announce an RPC server with
+// given server.
+type Listener interface {
+	Listen(net.Listener) error
+	ListenAndServe(net.Listener) error
 }
 
-// Request represents a incomming RPC request.
-type Request struct {
-	Body interface{}
-	Resp ResponseWriter
+// Startable interface should be implemented by transport that are need to
+// setup (or clean up) some resources before beign used.
+type Startable interface {
+	Start() error
+	Stop() error
 }

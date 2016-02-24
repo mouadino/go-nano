@@ -1,65 +1,67 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
-	"time"
+
+	"github.com/mouadino/go-nano/header"
+	"github.com/mouadino/go-nano/protocol"
+	"github.com/mouadino/go-nano/protocol/jsonrpc"
 )
+
+type echoHandler struct{}
+
+func (echoHandler) Handle(resp *protocol.Response, req *protocol.Request) {
+	resp.Body = req.Params["_0"]
+}
 
 func TestHTTPReceive(t *testing.T) {
 	trans := New()
 	trans.Listen()
+	trans.AddHandler(jsonrpc.New(), echoHandler{})
+	go trans.Serve()
 
-	body := `{"hello": "world"}`
+	body := `{"id": "0", "method": "", "params": {"_0": "world"}}`
+	result := `{"jsonrpc":"2.0","result":"world","error":null,"id":"0"}`
+
 	req, err := http.NewRequest("POST", "http://127.0.0.1:8080/rpc/", strings.NewReader(body))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	w := httptest.NewRecorder()
-	go trans.handle(w, req)
+	resp := httptest.NewRecorder()
+	trans.handle(resp, req)
 
-	select {
-	case r := <-trans.Receive():
-		b, ok := r.Body.([]byte)
-		if !ok {
-			t.Fatalf("request body is not []byte")
-		}
-		if string(b) != body {
-			t.Errorf("request body doesn't match want %v, got %v", body, r.Body)
-		}
-
-		r.Resp.Write([]byte(body))
-
-		if w.Body.String() != body {
-			t.Errorf("response body didn't match, want %s got %s", body, w.Body)
-		}
-	case <-time.After(1 * time.Second):
-		t.Errorf("Didn't receive any request after 1 second")
+	b := resp.Body.String()
+	if b != result {
+		t.Errorf("request body doesn't match want %v, got %v", result, b)
 	}
 }
 
 func TestHTTPSend(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Hello")
-	}))
-	defer ts.Close()
-
 	trans := New()
+	// FIXME: Broken api, nil pointer if this 2 are not called.
+	trans.AddHandler(jsonrpc.New(), echoHandler{})
+	trans.Listen()
+	go trans.Serve()
 
-	fmt.Printf(ts.URL)
-	resp, err := trans.Send(ts.URL, strings.NewReader("foobar"))
-
-	if err != nil {
-		t.Fatalf("unexpected error %s", err)
+	req := &protocol.Request{
+		Method: "",
+		Params: protocol.Params{"_0": "foobar"},
+		Header: header.Header{},
 	}
 
-	if string(resp) != "Hello\n" {
-		t.Errorf("unexpected response want %q, got %q", "Hello", resp)
+	resp, err := trans.Send(trans.Addr(), req)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err)
+	}
+
+	if resp.Body != "foobar" {
+		t.Errorf("unexpected response want %q, got %v", "foobar", resp)
 	}
 }
 

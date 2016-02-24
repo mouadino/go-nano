@@ -1,6 +1,9 @@
 package serializer
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"io"
+)
 
 type JSONSerializer struct{}
 
@@ -8,6 +11,7 @@ func (JSONSerializer) Encode(data interface{}) ([]byte, error) {
 	return json.Marshal(data)
 }
 
-func (JSONSerializer) Decode(data []byte, result interface{}) error {
-	return json.Unmarshal(data, result)
+func (JSONSerializer) Decode(r io.Reader, result interface{}) error {
+	dec := json.NewDecoder(r)
+	return dec.Decode(result)
 }

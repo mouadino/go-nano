@@ -7,6 +7,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"golang.org/x/net/context"
+
 	"github.com/mouadino/go-nano/protocol"
 )
 
@@ -42,14 +44,14 @@ func isRPCMethod(meth reflect.Method) bool {
 	return isExported && retTypeCorrect
 }
 
-func (h *structHandler) Handle(resp protocol.ResponseWriter, req *protocol.Request) {
+func (h *structHandler) Handle(ctx context.Context, req *protocol.Request, resp *protocol.Response) {
 	name := req.Method
 	fh, ok := h.methods[name]
 	if !ok {
-		resp.SetError(protocol.UnknownMethod)
+		resp.Error = protocol.UnknownMethod
 		return
 	}
-	fh.Handle(resp, req)
+	fh.Handle(ctx, req, resp)
 }
 
 type methodHandler struct {
@@ -57,18 +59,18 @@ type methodHandler struct {
 	method reflect.Method
 }
 
-func (h *methodHandler) Handle(resp protocol.ResponseWriter, req *protocol.Request) {
+func (h *methodHandler) Handle(ctx context.Context, req *protocol.Request, resp *protocol.Response) {
 	params, err := h.parseParams(req)
 	if err != nil {
-		resp.SetError(err)
+		resp.Error = err
 		return
 	}
 	data, err := h.call(params)
 	if err != nil {
-		resp.SetError(err)
+		resp.Error = err
 		return
 	}
-	resp.Set(data)
+	resp.Body = data
 }
 
 func (h *methodHandler) parseParams(req *protocol.Request) (params, error) {

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/mouadino/go-nano/protocol"
+	"github.com/mouadino/go-nano/transport"
 )
 
 var (
@@ -17,14 +18,14 @@ type reply struct {
 }
 
 type timeoutExt struct {
-	next    protocol.Sender
+	next    transport.Sender
 	timeout time.Duration
 }
 
 // NewTimeoutExt returns an extension that wraps a client to timeout
 // a request when this later take more than given duration.
 func NewTimeoutExt(timeout time.Duration) Extension {
-	return func(next protocol.Sender) protocol.Sender {
+	return func(next transport.Sender) transport.Sender {
 		return &timeoutExt{
 			next:    next,
 			timeout: timeout,
