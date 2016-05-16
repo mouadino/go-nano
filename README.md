@@ -8,11 +8,11 @@ A framework for writting web services in Go.
 
 ## Design
 
-### Rational
+### Rational:
 
 Developers should focus on writing the business logic.
 
-### Highlight
+### Highlight:
 
 - Transport agnostic (TCP, HTTP, AMQP ...)
 - Protocol agnostic (JSON-RPC, ProtocolBuffer, ...)
@@ -21,7 +21,7 @@ Developers should focus on writing the business logic.
 - Convention over configuration
 - RPC.
 
-### Components
+### Components:
 
                                         +------------ +     +---------+
                                         | Middlewares | <-> | Handler |
@@ -34,7 +34,7 @@ Developers should focus on writing the business logic.
                                         +------------ +     +---------+
 
 
-## Features
+## Features:
 
 Transports:
 
@@ -84,7 +84,7 @@ Misc:
 - [X] GoDoc
 - [ ] More complete example (e.g. user service)
 
-## Examples
+## Examples:
 
 Please check [examples] folder
 
