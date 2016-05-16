@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/mouadino/go-nano/protocol"
-	"github.com/mouadino/go-nano/protocol/dummy"
 	"github.com/mouadino/go-nano/utils"
 )
 
@@ -37,17 +36,17 @@ func TestHandling(t *testing.T) {
 		Method: "echo",
 		Params: utils.ParamsFormat("foobar"),
 	}
-	resp := &dummy.ResponseWriter{}
+	resp := &protocol.Response{}
 
 	handler.Handle(resp, &req)
 
-	ret, ok := resp.Data.(string)
+	ret, ok := resp.Body.(string)
 	if !ok {
 		t.Errorf("Return data is not string")
 	}
 
 	if ret != "foobar" {
-		t.Errorf("Expected handler to return %s, got %s", "foobar", resp.Data)
+		t.Errorf("Expected handler to return %s, got %s", "foobar", resp.Body)
 	}
 }
 
@@ -57,7 +56,7 @@ func TestUnknownMethod(t *testing.T) {
 		Method: "blabla",
 		Params: utils.ParamsFormat("foobar"),
 	}
-	resp := &dummy.ResponseWriter{}
+	resp := &protocol.Response{}
 
 	handler.Handle(resp, &req)
 
@@ -72,7 +71,7 @@ func TestWrongArgumentsMethod(t *testing.T) {
 		Method: "echo",
 		Params: utils.ParamsFormat("foobar", 1),
 	}
-	resp := &dummy.ResponseWriter{}
+	resp := &protocol.Response{}
 
 	handler.Handle(resp, &req)
 
@@ -87,7 +86,7 @@ func TestRemoteError(t *testing.T) {
 		Method: "fail",
 		Params: utils.ParamsFormat("foobar"),
 	}
-	resp := &dummy.ResponseWriter{}
+	resp := &protocol.Response{}
 
 	handler.Handle(resp, &req)
 

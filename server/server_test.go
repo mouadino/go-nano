@@ -2,23 +2,16 @@ package server
 
 import (
 	"testing"
-	"time"
 
 	"github.com/mouadino/go-nano/discovery"
 	"github.com/mouadino/go-nano/handler"
 	"github.com/mouadino/go-nano/protocol"
-	"github.com/mouadino/go-nano/protocol/dummy"
+	"github.com/mouadino/go-nano/protocol/jsonrpc"
+	"github.com/mouadino/go-nano/transport/memory"
 )
 
-func buildTestServer(rw *dummy.ResponseWriter, req *protocol.Request) *Server {
-	proto := dummy.New(rw, req)
-	server := New(proto)
-
-	return server
-}
-
-func echoHandler(rw protocol.ResponseWriter, req *protocol.Request) {
-	rw.Set(req.Params["msg"])
+func echoHandler(resp *protocol.Response, req *protocol.Request) {
+	resp.Body = req.Params["msg"]
 }
 
 type dummyAnnouncer struct {
@@ -31,12 +24,7 @@ func (an *dummyAnnouncer) Announce(name string, inst discovery.Instance) error {
 }
 
 func TestMultipleRegister(t *testing.T) {
-	rw := dummy.NewResponseRecorder()
-	req := &protocol.Request{
-		Method: "echo",
-		Params: protocol.Params{"msg": "foobar"},
-	}
-	server := buildTestServer(rw, req)
+	server := New(memory.New(), jsonrpc.New())
 
 	err := server.Register("echo", handler.HandlerFunc(echoHandler))
 	if err != nil {
@@ -54,12 +42,7 @@ func TestMultipleRegister(t *testing.T) {
 }
 
 func TestRegisterWithMetadata(t *testing.T) {
-	rw := dummy.NewResponseRecorder()
-	req := &protocol.Request{
-		Method: "echo",
-		Params: protocol.Params{"msg": "foobar"},
-	}
-	server := buildTestServer(rw, req)
+	server := New(memory.New(), jsonrpc.New())
 
 	err := server.RegisterWithMetadata(
 		"echo",
@@ -81,12 +64,7 @@ func TestRegisterWithMetadata(t *testing.T) {
 }
 
 func TestAnnounce(t *testing.T) {
-	rw := dummy.NewResponseRecorder()
-	req := &protocol.Request{
-		Method: "echo",
-		Params: protocol.Params{"msg": "foobar"},
-	}
-	server := buildTestServer(rw, req)
+	server := New(memory.New(), jsonrpc.New())
 
 	err := server.Register(
 		"echo",
@@ -124,46 +102,47 @@ func TestAnnounce(t *testing.T) {
 }
 
 func TestServeHandler(t *testing.T) {
-	rw := dummy.NewResponseRecorder()
+	trans := memory.New()
+	server := New(trans, jsonrpc.New())
+
+	err := server.Register("echo", handler.HandlerFunc(echoHandler))
+	if err != nil {
+		t.Fatalf("unexpected failure %s", err)
+	}
+
+	server.listen()
+	server.serve()
+
 	req := &protocol.Request{
 		Method: "echo",
 		Params: protocol.Params{"msg": "foobar"},
 	}
-	server := buildTestServer(rw, req)
+	resp, _ := trans.Send(":memory:", req)
 
-	err := server.Register("echo", handler.HandlerFunc(echoHandler))
-	if err != nil {
-		t.Fatalf("unexpected failure %s", err)
-	}
-
-	go server.Serve()
-
-	<-time.After(1 * time.Second)
-
-	if rw.Data.(string) != "foobar" {
-		t.Errorf("handler want %q, got %q", "foobar", rw.Data)
+	if resp.Body.(string) != "foobar" {
+		t.Errorf("handler want %q, got %q", "foobar", resp.Body)
 	}
 }
 
 func TestServeUnknownHandler(t *testing.T) {
-	// FIXME:
-	t.Skip("Fail on go tip")
-	rw := dummy.NewResponseRecorder()
-	req := &protocol.Request{
-		Method: "UnknownMethod",
-	}
-	server := buildTestServer(rw, req)
+	trans := memory.New()
+	server := New(trans, jsonrpc.New())
 
 	err := server.Register("echo", handler.HandlerFunc(echoHandler))
 	if err != nil {
 		t.Fatalf("unexpected failure %s", err)
 	}
 
-	go server.Serve()
+	server.listen()
+	server.serve()
 
-	<-time.After(1 * time.Second)
+	req := &protocol.Request{
+		Method: "UnknownMethod",
+	}
 
-	if rw.Error == nil || rw.Error.Error() != `Unknown handler "UnknownMethod"` {
-		t.Errorf("expected error got %q", rw.Error)
+	resp, _ := trans.Send(":memory:", req)
+
+	if resp.Error == nil || resp.Error.Error() != `Unknown handler "UnknownMethod"` {
+		t.Errorf("want unknown handler error got %q", resp.Error)
 	}
 }

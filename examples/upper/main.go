@@ -15,14 +15,16 @@ import (
 	"github.com/mouadino/go-nano/transport/http"
 )
 
-var zkHost = flag.String("zookeeper", "127.0.0.1:2181", "Zookeeper location")
-var rmqHost = flag.String("rabbitmq", "amqp://127.0.0.1:5672", "RabbitMQ location")
-var logger = log.New()
-var ms = []handler.Middleware{
-	middleware.NewLogger(logger),
-	middleware.NewRecover(logger, true, 8*1024),
-	middleware.NewTrace(),
-}
+var (
+	zkHost  = flag.String("zookeeper", "127.0.0.1:2181", "Zookeeper location")
+	rmqHost = flag.String("rabbitmq", "amqp://127.0.0.1:5672", "RabbitMQ location")
+	logger  = log.New()
+	ms      = []handler.Middleware{
+		middleware.NewLogger(logger),
+		middleware.NewRecover(logger, true, 8*1024),
+		middleware.NewTrace(),
+	}
+)
 
 type upperService struct{}
 
@@ -37,7 +39,7 @@ func main() {
 		[]string{*zkHost},
 	)
 
-	httpServ := server.New(jsonrpc.New(http.New()))
+	httpServ := server.New(http.New(), jsonrpc.New())
 	httpServ.Register("upper", upperService{}, ms...)
 
 	go func() {
@@ -46,7 +48,7 @@ func main() {
 		}
 	}()
 
-	amqpServ := server.New(jsonrpc.New(amqp.New(*rmqHost)))
+	amqpServ := server.New(amqp.New(*rmqHost), jsonrpc.New())
 	amqpServ.Register("upper", upperService{}, ms...)
 
 	amqpServ.Serve()

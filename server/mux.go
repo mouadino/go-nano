@@ -30,17 +30,18 @@ func (m *handlersMux) Add(name string, hdlr handler.Handler) error {
 	return nil
 }
 
-func (m *handlersMux) Handle(rw protocol.ResponseWriter, req *protocol.Request) {
+func (m *handlersMux) Handle(resp *protocol.Response, req *protocol.Request) {
 	parsedMethod := strings.SplitN(req.Method, ".", 2)
 	hdlrName := parsedMethod[0]
 
 	hdlr, ok := m.hdlrs[hdlrName]
 	if !ok {
-		rw.SetError(fmt.Errorf("Unknown handler %q", hdlrName))
+		// TODO: UnknownHandler error.
+		resp.Error = fmt.Errorf("Unknown handler %q", hdlrName)
 		return
 	}
 	if len(parsedMethod) > 1 {
 		req.Method = parsedMethod[1]
 	}
-	hdlr.Handle(rw, req)
+	hdlr.Handle(resp, req)
 }

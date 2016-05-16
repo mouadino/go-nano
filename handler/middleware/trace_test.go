@@ -5,7 +5,6 @@ import (
 
 	"github.com/mouadino/go-nano/header"
 	"github.com/mouadino/go-nano/protocol"
-	"github.com/mouadino/go-nano/protocol/dummy"
 	"github.com/pborman/uuid"
 )
 
@@ -15,15 +14,15 @@ func TestTraceMiddlewareGeneration(t *testing.T) {
 		Params: protocol.Params{},
 		Header: header.Header{},
 	}
-	rw := &dummy.ResponseWriter{
-		HeaderValues: header.Header{},
+	resp := &protocol.Response{
+		Header: header.Header{},
 	}
 
 	handler := Chain(&dummyHandler{}, NewTrace())
 
-	handler.Handle(rw, req)
+	handler.Handle(resp, req)
 
-	traceID := rw.Header().Get(TraceHeader)
+	traceID := resp.Header.Get(TraceHeader)
 
 	if traceID == "" {
 		t.Error("expected a trace header got nothing")
@@ -39,15 +38,15 @@ func TestTraceMiddlewareDelegation(t *testing.T) {
 			TraceHeader: traceID,
 		},
 	}
-	rw := &dummy.ResponseWriter{
-		HeaderValues: header.Header{},
+	resp := &protocol.Response{
+		Header: header.Header{},
 	}
 
 	handler := Chain(&dummyHandler{}, NewTrace())
 
-	handler.Handle(rw, req)
+	handler.Handle(resp, req)
 
-	newTraceID := rw.Header().Get(TraceHeader)
+	newTraceID := resp.Header.Get(TraceHeader)
 	if newTraceID != traceID {
 		t.Errorf("trace id didn't match, expected %s, got %s", traceID, newTraceID)
 	}

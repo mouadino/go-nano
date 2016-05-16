@@ -24,13 +24,13 @@ func NewLogger(logger *log.Logger) handler.Middleware {
 	}
 }
 
-func (m *loggerMiddleware) Handle(rw protocol.ResponseWriter, req *protocol.Request) {
+func (m *loggerMiddleware) Handle(resp *protocol.Response, req *protocol.Request) {
 	m.logger.WithFields(log.Fields{
 		"method": req.Method,
 	}).Info("Calling")
 	start := time.Now()
 
-	m.wrapped.Handle(rw, req)
+	m.wrapped.Handle(resp, req)
 
 	m.logger.WithFields(log.Fields{
 		"method":   req.Method,

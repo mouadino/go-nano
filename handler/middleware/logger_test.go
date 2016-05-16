@@ -8,7 +8,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/mouadino/go-nano/header"
 	"github.com/mouadino/go-nano/protocol"
-	"github.com/mouadino/go-nano/protocol/dummy"
 )
 
 func TestLoggerMiddleware(t *testing.T) {
@@ -17,9 +16,7 @@ func TestLoggerMiddleware(t *testing.T) {
 		Params: protocol.Params{},
 		Header: header.Header{},
 	}
-	rw := &dummy.ResponseWriter{
-		HeaderValues: header.Header{},
-	}
+	resp := &protocol.Response{}
 
 	buff := bytes.NewBufferString("")
 	logger := log.New()
@@ -27,7 +24,7 @@ func TestLoggerMiddleware(t *testing.T) {
 
 	handler := Chain(&dummyHandler{}, NewLogger(logger))
 
-	handler.Handle(rw, req)
+	handler.Handle(resp, req)
 
 	loglines := buff.String()
 

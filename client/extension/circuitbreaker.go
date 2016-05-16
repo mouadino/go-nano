@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/mouadino/go-nano/protocol"
+	"github.com/mouadino/go-nano/transport"
 	"github.com/rubyist/circuitbreaker"
 )
 
@@ -11,7 +12,7 @@ import (
 var OpenCircuitError = errors.New("open circuit breaker")
 
 type circuitBreakerExt struct {
-	next protocol.Sender
+	next transport.Sender
 	cb   *circuit.Breaker
 }
 
@@ -19,7 +20,7 @@ type circuitBreakerExt struct {
 // pattern. Currently no remote exception is counted.
 // FIXME: extensions are client specific this mean that all requests share same cb.
 func NewCircuitBreakerExt(cb *circuit.Breaker) Extension {
-	return func(next protocol.Sender) protocol.Sender {
+	return func(next transport.Sender) transport.Sender {
 		return &circuitBreakerExt{
 			next: next,
 			cb:   cb,
@@ -29,6 +30,7 @@ func NewCircuitBreakerExt(cb *circuit.Breaker) Extension {
 
 // TODO: Circuit breaker metrics.
 // TODO: whitelist of errors.
+// TODO: Per instance.
 func (e *circuitBreakerExt) Send(endpoint string, req *protocol.Request) (*protocol.Response, error) {
 	var (
 		resp *protocol.Response

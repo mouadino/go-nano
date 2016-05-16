@@ -6,6 +6,7 @@ instances in zookeeper and resolve them.
 package zookeeper
 
 import (
+	"bytes"
 	"strings"
 	"sync"
 	"time"
@@ -140,7 +141,7 @@ func (z *zookeeperAnnounceResolver) getInstanceData(name, id string) (discovery.
 	}
 
 	var meta discovery.InstanceMeta
-	err = z.serial.Decode(data, &meta)
+	err = z.serial.Decode(bytes.NewReader(data), &meta)
 	if err != nil {
 		z.logger.Errorf("zookeeper metadata parse failed for %s: %s", id, err)
 		return nil, err

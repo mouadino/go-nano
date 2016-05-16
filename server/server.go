@@ -5,12 +5,12 @@ Usage:
 
 		type Upper struct {}
 
-		func (Upper) Handle(rw protocol.ResponseWriter, req *protocol.Request) {
+		func (Upper) Handle(resp *protocol.Response, req *protocol.Request) {
 			text := req.Params["text"].(string)
-			rw.Set(strings.ToUpper(text))
+			resp.Body = strings.ToUpper(text)
 		}
 
-		serv := server.New(jsonrpc.New(http.New()))
+		serv := server.New(http.New(), jsonrpc.New())
 		serv.Register("Upper", Upper{})
 
 		_ = serv.Serve()
@@ -36,14 +36,16 @@ import (
 // Server represents an RPC server.
 type Server struct {
 	proto protocol.Protocol
+	trans transport.Transport
 	mux   handlersMux
 	metas map[string]map[string]interface{}
 }
 
 // New create a Server.
-func New(proto protocol.Protocol) *Server {
+func New(trans transport.Transport, proto protocol.Protocol) *Server {
 	return &Server{
 		proto: proto,
+		trans: trans,
 		mux:   handlersMux{make(map[string]handler.Handler)},
 		metas: make(map[string]map[string]interface{}),
 	}
@@ -69,7 +71,7 @@ func (s *Server) RegisterWithMetadata(name string, svc interface{}, meta map[str
 // start handling requests from transport.
 func (s *Server) Serve() {
 	s.listen()
-	go s.loop()
+	go s.serve()
 	wait()
 }
 
@@ -80,18 +82,17 @@ func (s *Server) ServeAndAnnounce(an discovery.Announcer) error {
 	if err != nil {
 		return err
 	}
-	go s.loop()
+	go s.serve()
 	wait()
 	return nil
 }
 
 func (s *Server) listen() {
-	trans := s.proto.Transport()
-	trans.Listen()
+	s.trans.Listen()
 }
 
 func (s *Server) announce(an discovery.Announcer) error {
-	addr, ok := s.proto.Transport().(transport.Addresser)
+	addr, ok := s.trans.(transport.Addressable)
 	if !ok {
 		return errors.New("can only announce transport of type transport.Addresser")
 	}
@@ -106,19 +107,9 @@ func (s *Server) announce(an discovery.Announcer) error {
 	return nil
 }
 
-func (s *Server) loop() {
-	for {
-		resp, req, err := s.proto.Receive()
-		if err != nil {
-			log.Errorf("transport receive failed: %s", err)
-			continue
-		}
-		if err != nil {
-			log.Errorf("code failed to decode: %s", err)
-			continue
-		}
-		go s.mux.Handle(resp, req)
-	}
+func (s *Server) serve() {
+	s.trans.AddHandler(s.proto, &s.mux)
+	go s.trans.Serve()
 }
 
 func wait() {

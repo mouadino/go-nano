@@ -1,62 +1,27 @@
 package dummy
 
-import (
-	"github.com/mouadino/go-nano/header"
-	"github.com/mouadino/go-nano/protocol"
-	"github.com/mouadino/go-nano/transport"
-	"github.com/mouadino/go-nano/transport/memory"
-)
+/*type dummyProtocol struct{}
 
-type ResponseWriter struct {
-	Data         interface{}
-	Error        error
-	HeaderValues header.Header
+func New() protocol.Protocol {
+	return &dummyProtocol{}
 }
 
-func NewResponseRecorder() *ResponseWriter {
-	return &ResponseWriter{}
+func (dummyProtocol) EncodeRequest(req *protocol.Request) ([]byte, error) {
+	return req.Body, nil
 }
 
-func (rw *ResponseWriter) Header() header.Header {
-	return rw.HeaderValues
+func (dummyProtocol) DecodeRequest(r io.Reader) (*protocol.Request, error) {
+	return &protocol.Request{}, nil
 }
 
-func (rw *ResponseWriter) Set(data interface{}) error {
-	rw.Data = data
-	return nil
+func (dummyProtocol) EncodeResponse(resp *protocol.Response) ([]byte, error) {
+	return []byte{}, nil
 }
 
-func (rw *ResponseWriter) SetError(err error) error {
-	rw.Error = err
-	return nil
+func (dummyProtocol) DecodeResponse(r io.Reader) (*protocol.Response, error) {
+	return &protocol.Response{}, nil
 }
 
-type dummyProtocol struct {
-	trans transport.Transport
-	rw    *ResponseWriter
-	req   *protocol.Request
-}
-
-func New(rw *ResponseWriter, req *protocol.Request) protocol.Protocol {
-	return &dummyProtocol{
-		trans: memory.New([][]byte{}, [][]byte{}),
-		req:   req,
-		rw:    rw,
-	}
-}
-
-func (p *dummyProtocol) Receive() (protocol.ResponseWriter, *protocol.Request, error) {
-	return p.rw, p.req, nil
-}
-
-func (p *dummyProtocol) Transport() transport.Transport {
-	return p.trans
-}
-
-func (p *dummyProtocol) Send(e string, req *protocol.Request) (*protocol.Response, error) {
-	// TODO: Dummy implementation
-	return &protocol.Response{
-		Body:  "",
-		Error: nil,
-	}, nil
-}
+func (dummyProtocol) String() string {
+	return "dummy"
+}*/

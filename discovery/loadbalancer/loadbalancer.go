@@ -11,7 +11,10 @@ import (
 	"github.com/mouadino/go-nano/client/extension"
 	"github.com/mouadino/go-nano/discovery"
 	"github.com/mouadino/go-nano/protocol"
+	"github.com/mouadino/go-nano/transport"
 )
+
+// TODO: Move this outside discovery.
 
 // NoEndpointError returned when loadbalancer doesn't find any suitable endpoint.
 var NoEndpointError = errors.New("No Endpoint")
@@ -19,18 +22,19 @@ var NoEndpointError = errors.New("No Endpoint")
 // LoadBalancerStrategy is the interface that define how an endpoint get chosen from
 // available endpoints.
 type LoadBalancerStrategy interface {
+	// TODO: Pass request too ?
 	Endpoint([]discovery.Instance) (string, error)
 }
 
 type loadBalanderExtension struct {
-	sender   protocol.Sender
+	sender   transport.Sender
 	strategy LoadBalancerStrategy
 	resolver discovery.Resolver
 }
 
 // New returns a client extension that know how to balance requests.
 func New(resolver discovery.Resolver, strategy LoadBalancerStrategy) extension.Extension {
-	return func(s protocol.Sender) protocol.Sender {
+	return func(s transport.Sender) transport.Sender {
 		return &loadBalanderExtension{
 			sender:   s,
 			strategy: strategy,
@@ -39,7 +43,7 @@ func New(resolver discovery.Resolver, strategy LoadBalancerStrategy) extension.E
 	}
 }
 
-// Send function to implement protocol.Sender interface.
+// Send function to implement transport.Sender interface.
 func (lb *loadBalanderExtension) Send(endpoint string, req *protocol.Request) (*protocol.Response, error) {
 	svc, err := lb.resolver.Resolve(endpoint)
 	if err != nil {

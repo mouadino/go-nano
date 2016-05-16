@@ -27,14 +27,14 @@ func NewRecover(logger *log.Logger, showStack bool, stackSize int) handler.Middl
 	}
 }
 
-func (m *recoverMiddleware) Handle(rw protocol.ResponseWriter, req *protocol.Request) {
-	defer m.recover(rw)
-	m.wrapped.Handle(rw, req)
+func (m *recoverMiddleware) Handle(resp *protocol.Response, req *protocol.Request) {
+	defer m.recover(resp)
+	m.wrapped.Handle(resp, req)
 }
 
-func (m *recoverMiddleware) recover(rw protocol.ResponseWriter) {
+func (m *recoverMiddleware) recover(resp *protocol.Response) {
 	if err := recover(); err != nil {
-		rw.SetError(protocol.InternalError)
+		resp.Error = protocol.InternalError
 		m.logger.WithFields(log.Fields{
 			"error": err,
 		}).Error("Panic")

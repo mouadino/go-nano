@@ -25,7 +25,6 @@ func FromNanoError(err error) *ErrorBody {
 	if err == nil {
 		return nil
 	}
-	// TODO: Set http status,
 	switch {
 	case err == protocol.UnknownMethod:
 		return &ErrorBody{

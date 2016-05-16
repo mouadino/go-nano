@@ -1,36 +1,20 @@
 package protocol
 
 import (
+	"io"
+
 	"github.com/mouadino/go-nano/header"
-	"github.com/mouadino/go-nano/transport"
 )
 
-type Sender interface {
-	Send(string, *Request) (*Response, error)
-}
-
-type Receiver interface {
-	Receive() (ResponseWriter, *Request, error)
-}
-
 type Protocol interface {
-	Sender
-	Receiver
-	Transport() transport.Transport
-}
+	EncodeRequest(*Request) ([]byte, error)
+	DecodeRequest(io.Reader, header.Header) (*Request, error)
 
-type ProtocolV2 interface {
-	EncodeRequest(Request) []byte
-	DecodeRequest([]byte) Request
-
-	EncodeResponse(Response) []byte
-	DecodeResponse([]byte) Response
-
-	EncodeError(error) []byte
-	DecodeError([]byte) error
+	EncodeResponse(*Response) ([]byte, error)
+	DecodeResponse(io.Reader, header.Header) (*Response, error)
 
 	// String returns the name of the protocol, to be used in content-type and uri scheme.
-	String()
+	String() string
 }
 
 type Params map[string]interface{}
@@ -45,12 +29,4 @@ type Response struct {
 	Body   interface{}
 	Error  error
 	Header header.Header
-}
-
-// TODO: s/ResponseWriter/Responder/ ?
-type ResponseWriter interface {
-	Header() header.Header
-
-	Set(interface{}) error
-	SetError(err error) error
 }

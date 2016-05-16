@@ -23,7 +23,7 @@ Here is a simple example of a valid service definition using a normal struct:
 
 The same service implemented using a plain old handler will look:
 
-	func AddHandler(rw protocol.ResponseWriter, req *protocol.Request) {
+	func AddHandler(resp *protocol.Response, req *protocol.Request) {
 		a = req.Params["_0"].(int)
 		b = req.Params["_1"].(int)
 		rw.Set(a + b)
@@ -32,18 +32,21 @@ The same service implemented using a plain old handler will look:
 */
 package handler
 
-import "github.com/mouadino/go-nano/protocol"
+import (
+	"github.com/mouadino/go-nano/protocol"
+	"golang.org/x/net/context"
+)
 
 // Handler interface for handling RPC requests.
 type Handler interface {
-	Handle(protocol.ResponseWriter, *protocol.Request)
+	Handle(context.Context, *protocol.Request, *protocol.Response)
 }
 
 // HandlerFunc represents a function that implement Handler interface.
-type HandlerFunc func(protocol.ResponseWriter, *protocol.Request)
+type HandlerFunc func(context.Context, *protocol.Request, *protocol.Response)
 
-func (h HandlerFunc) Handle(rw protocol.ResponseWriter, req *protocol.Request) {
-	h(rw, req)
+func (h HandlerFunc) Handle(ctx context.Context, req *protocol.Request, resp *protocol.Response) {
+	h(ctx, req, resp)
 }
 
 // Middleware represents a function that wraps around a Handler and return

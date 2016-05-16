@@ -2,12 +2,10 @@
 package amqp
 
 import (
-	"errors"
-	"strings"
 	"testing"
-	"time"
 
-	"github.com/mouadino/go-nano/transport"
+	"github.com/mouadino/go-nano/protocol"
+	"github.com/mouadino/go-nano/protocol/jsonrpc"
 )
 
 const (
@@ -15,57 +13,37 @@ const (
 	amqpURI          = "amqp://guest:guest@localhost:5672/"
 )
 
-func chanRead(ch <-chan transport.Request, timeout time.Duration) (transport.Request, error) {
-	select {
-	case res := <-ch:
-		return res, nil
-	case <-time.After(2 * time.Second):
-		return transport.Request{}, errors.New("Timeout")
-	}
+type echoHandler struct{}
+
+func (echoHandler) Handle(resp *protocol.Response, req *protocol.Request) {
+	resp.Body = req.Params["_0"]
 }
 
 func TestAMQPTransport(t *testing.T) {
 	firstEndpoint := "first-test-client"
 	firstTrans := New(amqpURI, Exchange(testExchangeName), QueueName(firstEndpoint))
+	firstTrans.AddHandler(jsonrpc.New(), echoHandler{})
 	firstTrans.Listen()
+	go firstTrans.Serve()
 
 	secondEndpoint := "second-test-client"
 	secondTrans := New(amqpURI, Exchange(testExchangeName), QueueName(secondEndpoint))
+	secondTrans.AddHandler(jsonrpc.New(), echoHandler{})
 	secondTrans.Listen()
+	go secondTrans.Serve()
 
-	body := "Hello World!"
-	type RespData struct {
-		body []byte
-		err  error
+	req := &protocol.Request{
+		Method: "",
+		Params: protocol.Params{"_0": "foobar"},
 	}
-	respCh := make(chan RespData, 1)
-	go func() {
-		body, err := firstTrans.Send(secondEndpoint, strings.NewReader(body))
-		respCh <- RespData{body, err}
-	}()
 
-	req, err := chanRead(secondTrans.Receive(), 2*time.Second)
+	resp, err := firstTrans.Send(secondEndpoint, req)
+
 	if err != nil {
-		t.Fatalf("Didn't receive any request after 2 second")
+		t.Fatalf("unexpected error: %s", err)
 	}
 
-	b, ok := req.Body.([]byte)
-	if !ok {
-		t.Fatalf("request body is not []byte")
+	if resp.Body != "foobar" {
+		t.Errorf("response body want %v, got %v", "foobar", resp.Body)
 	}
-	if string(b) != body {
-		t.Errorf("request body doesn't match want %v, got %v", body, req.Body)
-	}
-
-	req.Resp.Write([]byte(body))
-
-	resp := <-respCh
-	if resp.err != nil {
-		t.Fatalf("%s", resp.err)
-	}
-
-	if string(resp.body) != body {
-		t.Errorf("response body didn't match, want %s got %s", body, resp.body)
-	}
-
 }
